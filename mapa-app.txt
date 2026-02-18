@@ -1,18 +1,18 @@
 MeuDinheiro/
 │
-├── .github/
+├── .github/                            # Pasta para o teste automático do código no Github
     └── workflows/
-        └──              # Arquivo de configuração de integração contínua do github
-├── .venv/               # Configuração do Ambiente Virtual
-├── app.py               # Arquivo principal do Streamlit
-├── classes/             # Pasta com as classes do projeto
-│   ├── __init__.py      # Arquivo de inicialização do pacote
-│   ├── transacao.py     # Classe transacao e TransacaoRecorrente
-│   ├── conta.py         # Classe conta e suas subclasses (Corrente, etc.)
-│   └── usuario.py       # Classe usuário e família
-└── database/            # Arquivo .db do SQLite/PostgreeSQL
-├── docs/                # Pasta para documentação
-│   ├── esquemas/        # Para os mapas de classes e lógica
-│   ├── mockups/         # Para os desenhos das telas do Streamlit
-│   └── referencias/     # Para imagens externas ou manuais que você consultar
-└── requirements.txt     # Gerado pelo seu pip
+        └── python-app.yml              # Arquivo de configuração de integração contínua do github
+├── .venv/                              # Configuração do Ambiente Virtual
+├── app.py                              # Arquivo principal do Streamlit
+├── classes/                            # Pasta com as classes do projeto
+│   ├── __init__.py                     # Arquivo de inicialização do pacote
+│   ├── transacao.py                    # Classe transacao e TransacaoRecorrente
+│   ├── conta.py                        # Classe conta e suas subclasses (Corrente, etc.)
+│   └── usuario.py                      # Classe usuário e família
+└── database/                           # Arquivo .db do SQLite/PostgreeSQL
+├── docs/                               # Pasta para documentação
+│   ├── esquemas/                       # Para os mapas de classes e lógica
+│   ├── mockups/                        # Para os desenhos das telas do Streamlit
+│   └── referencias/                    # Para imagens externas ou manuais que você consultar
+└── requirements.txt                    # Gerado pelo seu pip
