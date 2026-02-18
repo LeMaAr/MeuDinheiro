@@ -1,0 +1,135 @@
+mapa de classes:
+
+*** classe transação:
+	atributos:
+	 -valor(float)- (valor da transação)
+	 -tipo(str)- (debito/credito/ajuste)	
+	 -categoria(str)- (categoria principal, ex.: moradia, transporte, etc.)
+	 -subcategoria(str)- (derivada da principal, ex.: Aluguel, manutenção da casa, etc.)
+	 -idconta(int)- (identificador da conta que recebeu a transação)
+	 -tags(str)- ( )
+	 -data(datetime)- (data da transação)
+	 -descricao(str)- (campo opicional de informação)
+	 -id(int)- (identificador da conta)
+	 -local(str)- (local onde a transação foi feita)
+
+	métodos:
+	 - add_transacao:
+		adicionar um id novo e um novo registro no banco de dados
+	- del_transacao:
+		deletar um registro no banco de dados
+	- mod_transacao:
+		alterar algum atributo em uma transação
+
+	subclasses:
+		- transação recorrente:
+			atributos específicos:
+			- data de início(datetime) - (primeiro dia de cobrança)
+			- ciclo(str ou int)- (ciclo de cobrança, ex.: mensal, anual, etc ou de 15 em 15 dias por exemplo)
+			- data de término(datetime) - (data da última cobrança)
+		
+			métodos específicos:
+			- add_transacao_rec:
+				adiciona uma nova transação recorrente com data de início, ciclo e data de término
+
+*** classe conta:
+	atributos:
+	 - idconta(int)- (identificador da conta)
+	 - saldo(float)- (saldo atual da conta)
+	 - banco(str)- (identificador do banco, ex.: 001-banco do brasil... )(mais pra frente incluir uma api que retorne o número dos bancos)
+	 - lista_transacoes(list) - (lista com o histórico de transações relativas a cada conta)
+
+	métodos:
+	 - add_conta:
+		cria uma nova conta
+	 - mov_conta:
+		adiciona/ remove fundos de uma conta existente com base no objeto transação 
+	 - mod_saldo:
+		modifica o saldo
+
+
+	subclasses:
+
+		- conta corrente:
+			atributos específicos:
+			- chesp(float)- (valor do cheque especial)
+		
+		- conta poupança:
+		
+		- cartão de crédito:
+			atributos específicos:
+			- limite(float)
+			- fecha_cartao(datetime) - (data de fechamento do cartão)
+			- cobra_cartao(datetime) - (data de cobrança do cartão)
+
+		- carteira física:
+
+
+*** classe usuário:
+	atributos:
+	 - id_usuário(int)- id com o número de identificação do usuário
+	 - nome_usuário(str)- nome do usuário
+	 - família(str)- nome da família do usuário
+
+	métodos:
+	 - add_usuario:
+		adiciona um novo usuário ao banco de dados
+	- rem_usuario:
+		remove um usuário do banco de dados
+	- mod_usuario:
+		altera o nome do usuário
+
+
+*** classe família:
+	atributos:
+	 - id_família(int)- número de identificação da família
+	 - nome_familia(str)- nome da família
+	 - lista_usuarios(list)- lista com os usuários pertecentes àquela família
+	 - adm_familia(usuario) - pessoa autorizada a modificar a classe família
+	
+	métodos:
+ 	- add_usuario:
+		adiciona um novo usuário à família
+	- del_usuario:
+		remove um usuário da família
+	- add_família:
+		adiciona uma nova família
+	- del_familia:
+		remove uma família
+	- mod_familia:
+		modifica uma família existente
+
+
+
+*** classe metas:
+	atributos:
+	 - nome_meta(str)- nome da meta
+	 - id_meta(int)- identificador da meta
+	 - valor(float)- valor a ser poupado
+	 - data_limite(datetime)- data de conclusao da meta
+
+	métodos:
+	 - add_meta:
+		adicionar nova meta
+	- del_meta:
+		remover meta
+	- mod_meta:
+		modificar meta existente
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
