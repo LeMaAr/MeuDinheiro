@@ -1,2 +1,4 @@
 .venv/
+# Arquivos de sistema do Windows
 desktop.ini
+Thumbs.db
