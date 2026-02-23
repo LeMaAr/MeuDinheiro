@@ -69,7 +69,11 @@ mapa de classes:
 	atributos:
 	 - id_usuário(int)- id com o número de identificação do usuário
 	 - nome_usuário(str)- nome do usuário
+	 - email - email do usuário
+	 - tipo do usuário - comum ou admin
 	 - família(str)- nome da família do usuário
+	 - senha_hash - hash da senha do usuário.
+	 - id_familia - id da família, se houver
 
 	métodos:
 	 - add_usuario:
@@ -78,7 +82,9 @@ mapa de classes:
 		remove um usuário do banco de dados
 	- mod_usuario:
 		altera o nome do usuário
-
+	- checar_senha:
+		checar se a senha está correta
+	
 
 *** classe família:
 	atributos:
@@ -98,6 +104,9 @@ mapa de classes:
 		remove uma família
 	- mod_familia:
 		modifica uma família existente
+	- add_admin:
+		promove um segundo usuário da família a admin (somente admin)
+
 
 
 
@@ -115,6 +124,9 @@ mapa de classes:
 		remover meta
 	- mod_meta:
 		modificar meta existente
+
+
+
 
 
 

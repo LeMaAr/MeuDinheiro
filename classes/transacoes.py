@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import List, Optional
 from database.config import Base, SessionLocal
-from sqlalchemy import Column, Integer, Float, String, DateTime, Date
+from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey
 
 # Definindo a classe transações.
 
@@ -15,10 +15,9 @@ class Transacao(Base):
     categoria = Column(String) # categoria da transação. Ex.: Moradia, Transporte, Saúde, etc.
     subcategoria = Column(String) # subcategorias da transação. Ex.: aluguel, conta de luz, conta de água, etc.
     data = Column(DateTime, default=datetime.now) # data da transação 
-    idconta = Column(Integer) # id da conta no banco
+    id_conta = Column(Integer, ForeignKey("contas.id_conta")) # id da conta no banco
     descricao = Column(String) # Campo curto para o usuário adicionar algum comentário sobre a transação
     local = Column(String) # Local onde a transação ocorreu. Ex.: Mercado X, Padaria Y, etc
-    
     tipo_registro = Column(String) # identificador de transação comum ou recorrente
     
     __mapper_args__ = {
@@ -26,7 +25,7 @@ class Transacao(Base):
         'polymorphic_identity': 'comum'
     }
 
-
+    # métodos da classe:
 
     def __init__(self, 
                  valor: float,
@@ -53,8 +52,6 @@ class Transacao(Base):
         self.idconta = idconta
         self.descricao = descricao
         self.local = local
-
-    # métodos da classe:
     
     def add_transacao(self):
         
@@ -74,7 +71,6 @@ class Transacao(Base):
         finally:
             db.close() # fecha a conexão
 
-
     def del_transacao(self):
 
         db = SessionLocal() # Estabelece a conexão com o banco de Dados.
@@ -82,7 +78,7 @@ class Transacao(Base):
         try:
             db.delete(self) # deleta a transação atual no Banco de Dados
             db.commit() # Salva a transação permanentemente
-            print(f"Transação {self.id} incluída com sucesso!") # imprime uma mensagem de conclusão.
+            print(f"Transação {self.id} excluída com sucesso!") # imprime uma mensagem de conclusão.
                     
 
         except Exception as e:
@@ -92,7 +88,6 @@ class Transacao(Base):
 
         finally:
             db.close() # fecha a conexão
-
 
     def mod_transacao(self):
 
