@@ -2,6 +2,7 @@ from datetime import datetime, date
 from typing import List, Optional
 from database.config import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey
+from sqlalchemy.orm import relationship
 
 # Definindo a classe transações.
 
@@ -19,6 +20,7 @@ class Transacao(Base):
     descricao = Column(String) # Campo curto para o usuário adicionar algum comentário sobre a transação
     local = Column(String) # Local onde a transação ocorreu. Ex.: Mercado X, Padaria Y, etc
     tipo_registro = Column(String) # identificador de transação comum ou recorrente
+    conta = relationship("Conta", back_populates="transacoes")
     
     __mapper_args__ = {
         'polymorphic_on': tipo_registro,
