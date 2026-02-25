@@ -14,7 +14,9 @@ class Usuario(Base):
     senha_hash = Column(String) # código hash da senha do usuário
     tipo_usuario = Column(String) # Se o usuário é comum ou admin
     id_familia = Column(Integer, ForeignKey("familias.id_familia")) # id da família, se houver. Cria um relationship com a coluna id_familia da tabela famílias
-    familia_vinculada = relationship("Familia", back_populates="usuarios")
+    familia_vinculada = relationship("Familia", back_populates="usuarios", foreign_keys=[id_familia])
+
+    regras = relationship("RegraTag", back_populates="usuario")
     
     def __init__(self, nome, email, senha_plana, tipo_usuario= "comum", id_familia = None):
         self.nome = nome

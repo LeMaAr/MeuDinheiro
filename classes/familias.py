@@ -9,7 +9,7 @@ class Familia(Base):
     id_familia = Column(Integer, primary_key=True, autoincrement=True) # id única da familia, o primary key impede que hajam duas chaves iguais e o autoincrement adiciona 1 a cada novo usuário
     nome_familia = Column(String, nullable=False) # nome da familia
     id_admin = Column(Integer, ForeignKey("usuarios.id_usuario")) # id dos admins daquela família
-    usuarios = relationship("Usuario", back_populates="familia_vinculada")
+    usuarios = relationship("Usuario", back_populates="familia_vinculada", foreign_keys="[Usuario.id_familia]")
     
     def __init__(self, nome, id_admin):
         self.nome_familia = nome

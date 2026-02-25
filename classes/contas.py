@@ -14,18 +14,20 @@ class Conta(Base):
     banco = Column(String) # nome do banco
     tipo_conta = Column(String) # coluna com o tipo de conta
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
+    limite_seguranca = Column (Float, nullable=True) # limite de segurança estipulado pelo usuário
     transacoes = relationship("Transacao", back_populates="conta")
-    
+        
     __mapper_args__ = {
         'polymorphic_on': tipo_conta,
         'polymorphic_identity': 'conta_base'
     }
     
-    def __init__(self, nome_conta, saldo_inicial, id_usuario, banco=None):
+    def __init__(self, nome_conta, saldo_inicial, id_usuario, limite_seguranca=None , banco=None):
 
         self.nome_conta = nome_conta
         self.saldo_inicial = saldo_inicial
         self.id_usuario = id_usuario
+        limite_seguranca = limite_seguranca
         self.banco = banco
 
     @property
@@ -38,6 +40,16 @@ class Conta(Base):
                 total -= t.valor
         return total
     
+    def verificar_gatilhos(self):
+        # função para verificar se o saldo está chagando no limite de gastos estabelecido
+        alertas = []
+        saldo = self.saldo_atual 
+        if self.limite_seguranca > 0 and saldo < self.limite_seguranca and saldo > 0:
+            alertas.append(f"Atenção! O saldo da conta {self.nome_conta} está abaixo do limite estipulado de R${self.limite_seguranca}.")
+        if hasattr(self, 'cheque_especial') and saldo < 0:
+            percentual_uso = (abs(saldo) / self.cheque_especial)*100
+            alertas.append(f"Alerta: Você está usando {percentual_uso:.1f}% do seu cheque especial.")
+
     def add_conta(self):
         db = SessionLocal()
         
@@ -49,7 +61,7 @@ class Conta(Base):
         
         except Exception as e:
             db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao adicionar o usuário{self.id_conta}: {e}") # imprime uma mensagem de conclusão.
+            print (f"Erro ao adicionar a conta {self.id_conta}: {e}") # imprime uma mensagem de conclusão.
             raise e # lança o erro para fora da função.
 
         finally:
@@ -104,6 +116,18 @@ class ContaCorrente(Conta):
         super().__init__(nome_conta, saldo_inicial, id_usuario, banco)
         self.cheque_especial = cheque_especial
         self.vencimento = vencimento
+
+    @property
+    def limite_disponivel(self):
+        # Se o saldo for negativo, o cheque especial está sendo usado
+        if self.saldo_atual < 0:
+            return self.cheque_especial + self.saldo_atual
+        return self.cheque_especial
+
+    @property
+    def saldo_total_disponivel(self):
+        # Soma o dinheiro real com o limite do banco
+        return self.saldo_atual + self.cheque_especial
 
 class Cartao(Conta):
 

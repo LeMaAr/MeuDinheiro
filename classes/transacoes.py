@@ -10,13 +10,15 @@ class Transacao(Base):
 
     __tablename__ = "transacoes" # criando a tabela "transacoes"
     
-    id = Column(Integer, primary_key=True, autoincrement=True) # id única da transação, o primary key impede que hajam mais de uma chave igual e o autoincrement adiciona 1 a cada nova transação
+    id_transacao = Column(Integer, primary_key=True, autoincrement=True) # id única da transação, o primary key impede que hajam mais de uma chave igual e o autoincrement adiciona 1 a cada nova transação
     valor = Column(Float, nullable=False) # valor da transação
     tipo = Column(String) # Receita ou Despesa
     categoria = Column(String) # categoria da transação. Ex.: Moradia, Transporte, Saúde, etc.
     subcategoria = Column(String) # subcategorias da transação. Ex.: aluguel, conta de luz, conta de água, etc.
+    tag = Column(String) # tags para organizar os gráficos
     data = Column(DateTime, default=datetime.now) # data da transação 
     id_conta = Column(Integer, ForeignKey("contas.id_conta")) # id da conta no banco
+    id_usuario = Column (Integer, ForeignKey("usuarios.id_usuario")) # id de usuário
     descricao = Column(String) # Campo curto para o usuário adicionar algum comentário sobre a transação
     local = Column(String) # Local onde a transação ocorreu. Ex.: Mercado X, Padaria Y, etc
     tipo_registro = Column(String) # identificador de transação comum ou recorrente
@@ -30,14 +32,17 @@ class Transacao(Base):
     # métodos da classe:
 
     def __init__(self, 
-                 valor: float,
-                 tipo: str,
+                 tipo_registro: str,
+                 valor: float, 
+                 tipo: str, 
                  categoria: str, 
-                 idconta: int,
+                 id_conta: int, 
+                 id_usuario: int,
                  subcategoria: str = None, 
+                 tag : str = None, 
                  data: Optional[datetime] = None, 
                  descricao: Optional[str] = None, 
-                 local: str = ""
+                 local: str = "" 
                  ):
         
         # atributos da classe: 
@@ -51,7 +56,10 @@ class Transacao(Base):
         self.tipo = tipo
         self.categoria = categoria
         self.subcategoria = subcategoria
-        self.idconta = idconta
+        self.tag = tag
+        self.id_conta = id_conta
+        self.tipo_registro = tipo_registro
+        self.id_usuario = id_usuario
         self.descricao = descricao
         self.local = local
     
@@ -63,7 +71,7 @@ class Transacao(Base):
             db.add(self) # adiciona a transação atual no Banco de Dados
             db.commit() # Salva a transação permanentemente
             db.refresh(self) # atualiza o objeto criado com a ID gerada pelo BD
-            print(f"Transação {self.id} incluída com sucesso!") # imprime uma mensagem de conclusão.
+            print(f"Transação {self.id_transacao} incluída com sucesso!") # imprime uma mensagem de conclusão.
 
         except Exception as e:
             db.rollback() # caso haja algum erro, desfaz a operação.
@@ -80,7 +88,7 @@ class Transacao(Base):
         try:
             db.delete(self) # deleta a transação atual no Banco de Dados
             db.commit() # Salva a transação permanentemente
-            print(f"Transação {self.id} excluída com sucesso!") # imprime uma mensagem de conclusão.
+            print(f"Transação {self.id_transacao} excluída com sucesso!") # imprime uma mensagem de conclusão.
                     
 
         except Exception as e:
@@ -99,7 +107,7 @@ class Transacao(Base):
             db.merge(self) # mescla o estado atual do objeto com seu equivalente no BD
             db.commit() # salva a alteração no bd
             db.refresh(self) # atualiza o bd com a alteração
-            print (f"Transação {self.id} alterada com sucesso.") # imprime a msg de conclusão
+            print (f"Transação {self.id_transacao} alterada com sucesso.") # imprime a msg de conclusão
         
         except Exception as e:
             db.rollback() # caso haja algum erro, desfaz a operação.
@@ -125,7 +133,7 @@ class TransacaoRecorrente(Transacao):
                  valor: float, 
                  tipo: str, 
                  categoria: str, 
-                 idconta : int,
+                 id_conta : int,
                  data_inicio: date, 
                  ciclo: str, 
                  descricao: str = None,
@@ -137,7 +145,7 @@ class TransacaoRecorrente(Transacao):
         
         # O super() chama o __init__ da classe pai (Transacao)
         
-        super().__init__(valor=valor, tipo=tipo, categoria=categoria, idconta=idconta, subcategoria=subcategoria, descricao=descricao, local=local, data = data)
+        super().__init__(valor = valor, tipo = tipo, categoria = categoria, id_conta = id_conta, subcategoria = subcategoria, descricao = descricao, local = local, data = data)
         self.data_inicio = data_inicio
         self.ciclo = ciclo
         self.data_termino = data_termino

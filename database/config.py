@@ -8,7 +8,7 @@ DATABASE_URL = "sqlite:///database/meudinheiro.db"  # quando migrarmos para o po
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread" : False})
 
 # Criando a session, que usaremos para enviar comandos:
-SessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine)
+SessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine, expire_on_commit=False)
 
 # A 'Base' é a "mãe" de todas as classes (Transacao, Conta, etc)
 # Todas as classes que herdarem dela serão transformadas em tabelas no banco
