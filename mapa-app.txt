@@ -13,7 +13,12 @@ MeuDinheiro/
 │   └── metas.py                        # Classe metas
 └── database/                           # Arquivo .db do SQLite/PostgreeSQL
 ├── docs/                               # Pasta para documentação
-│   ├── esquemas/                       # Para os mapas de classes e lógica
-│   ├── mockups/                        # Para os desenhos das telas do Streamlit
-│   └── referencias/                    # Para imagens externas ou manuais que você consultar
+│   ├── esquemas/                       # Mapas de classes e lógica
+│   ├── mockups/                        # Desenhos das telas do Streamlit
+│   └── referencias/                    # Referencias internas e externas para consulta
 └── requirements.txt                    # Gerado pelo seu pip
+└── scripts_aux/                        # Pasta para documentação
+│   ├── gerador_extrato_ficticio.py     # Script para gerar um extrato .csv para testar a função de importar extrato
+│   ├── seed_db.py                      # Script para popular o db
+│   └── meu_extrato_teste.csv           # Modelo de extrato randomico para teste
+└── requirements.txt                    # lista de dependências do aplicativo

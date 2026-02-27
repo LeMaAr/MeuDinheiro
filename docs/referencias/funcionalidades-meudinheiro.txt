@@ -1,0 +1,138 @@
+1. Funcionalidades Adicionadas:
+
+A. Sistema de Tags (Além das Categorias) *** DONE ***
+	. Adicionar Tags transversais às transações.
+	. Exemplo: Categoria "Alimentação" com a Tag "Viagem_Trabalho". Isso permite que o usuário saiba quanto gastou com comida 	especificamente em viagens, sem bagunçar a categoria principal.
+
+B. Alertas de "Gatilho" de Gastos *** DONE ***
+	. Adicionar um verificador no método saldo_atual.
+	. Se o saldo atingir 80% do limite do cartão ou se uma categoria (ex: "Lazer") ultrapassar o teto definido, o sistema gera uma notificação. (Falta implementar o verificador por categoria)
+
+C. Importação de Extrato (CSV/OFX) *** DONE ***
+	. Objetivo: importar o extrato facilita o processo de cadastro de entradas no aplicativo, aumentando a chance do aplicativo ser usado.
+	. Criar um método que lê um arquivo CSV exportado do banco (Nubank, por exemplo) e usa as suas classes para cadastrar tudo automaticamente, em vez de o usuário digitar uma por uma. (no futuro implementar um metodo para leitura de pdfs tbm)
+	. Foi adicionado um método que identifica automaticamente as categorias, não sendo necessário pedir ao usuário que marque cada coluna manualmente.
+
+D. Detecção de Duplicatas (Data Cleaning) *** DONE***
+	. Um problema comum em extratos é importar o mesmo arquivo duas vezes ou importar arquivos que se sobrepõem.
+    	. Antes de salvar, o script verifica se já existe uma transação com a mesma data, valor e descricao para aquele id_usuario.
+
+E. Análise de Recorrência Automática *** TO DO***
+	. O sistema identifica sozinho o que é conta fixa.
+                  . Criar um script de análise que agrupa transações por descrição. Se "NETFLIX" aparece todo mês com o mesmo valor, o app sugere transformar aquilo em uma TransacaoRecorrente.
+
+F. Adição de ícones e cores para as categorias e subcategorias *** DONE***
+	. Adicionar uma biblioteca de ícones para o usuário escolher ao definir as categorias e subcategorias
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Funcionalidades para Adicionar no Futuro:
+
+G.Aba Investimentos 
+	Criar uma classe investimentos. O sistema pode ter uma calculadora integrada que calcula o retorno do investimento.
+	· Permite entrada de aportes mensais
+	· Mostra tabela de evolução ano a ano (ou mes a mes)
+	· Gera gráfico de crescimento
+	. Calculadora de Rentabilidade de CDB/LCI/LCA:
+	· Calcula rentabilidade líquida (após IR)
+	· Considera prazo de vencimento
+	· Mostra equivalente em poupança
+	· Compara diferentes tipos de investimento
+	· Calcula retorno real (descontando inflação)
+	· Considera IR sobre lucros
+	· Mostra melhor opção por perfil
+
+		Gerenciador de Investimentos em Ações
+			· Registra compra e venda de ações
+			· Calcula lucro/prejuízo realizado
+			· Acompanha dividendos recebidos
+			· Mostra rentabilidade da carteira
+
+H. Analise de anomalias nos gastos
+	Se uma entrada estiver muito discrepante, o sistema identifica e notifica o usuário
+
+I. Leitor de mensagens de texto
+	O sistema lê as mensagens de texto enviadas pelo banco do usuário e sugere a criação da transação.
+
+J. Ajuste na aba METAS
+	. Permitir ao usuário não estipular um prazo final, nesse caso o programa calcula em quanto tempo o usuário deve chegar na meta com base nos aportes.
+	. Mostrar progresso visual
+	. Sugestão de ajustes nos aportes
+
+K. Calculadora de Necessidade de Reserva de Emergência
+	· Calcula gastos mensais essenciais
+	· Sugere valor ideal da reserva
+	· Considera estabilidade profissional
+	· Mostra quanto tempo a reserva duraria
+
+L. Calculadora de Juros de Cartão de Crédito
+	· Simula dívida rotativa do cartão
+	· Mostra crescimento da dívida mês a mês
+	· Compara com empréstimo pessoal
+	· Calcula tempo para quitar com parcelas fixas
+
+M. Simulador de Aposentadoria
+	· Calcula quanto você precisa poupar para se aposentar
+	· Considera inflação e expectativa de vida
+	· Simula diferentes cenários de mercado
+	· Mostra idade ideal para aposentadoria
+
+N. Rastreador de Patrimônio Líquido
+	· Soma todos os ativos (imóveis, investimentos)
+	· Subtrai passivos (dívidas, financiamentos)
+	· Mostra evolução mensal/anual
+	· Gráfico de crescimento patrimonial
+
+K. Calculadora de Empréstimos
+	· Calcula parcelas e CET
+	· Simula diferentes taxas e prazos
+	· Mostra tabela SAC vs Price
+	· Compara custo total do empréstimo
+
+N. Controle de Faturas e Boletos
+	· Registra contas a pagar/receber
+	· Alertas de vencimento
+	· Cálculo de multas/juros por atraso
+	· Conciliação bancária simples
+
+O. Calculadora de Custo por Km do Carro
+	· Considera combustível, manutenção, seguro
+	· Compara com Uber/transporte público
+	· Calcula custo real por viagem
+	· Ajuda a decidir quando trocar de carro
+
+P. Planejador de Compras Parceladas
+	· Analisa impacto das parcelas no orçamento
+	· Calcula comprometimento de renda
+	· Compara à vista vs parcelado
+	· Alerta quando tem muitas parcelas
+
+Q. Analisador de Contratos de Aluguel
+	· Calcula reajuste por IGP-M/IPCA
+	· Compara aluguel vs financiamento
+	· Simula multa por quebra de contrato
+	· Calcula valor do fiador/seguro fiança
+
+R. Rastreador de Patrimônio Líquido
+	· Soma todos os ativos (imóveis, investimentos)
+	· Subtrai passivos (dívidas, financiamentos)
+	· Mostra evolução mensal/anual
+	· Gráfico de crescimento patrimonial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
