@@ -14,7 +14,7 @@ class Categoria(Base):
     nome = Column(String, nullable=False) # nome da categoria
     cor_hex = Column(String) # cor hexadecimal da categoria
     icone = Column(String(50)) # nome do ícone da categoria
-    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # id de usuário
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=True) # id de usuário
 
     usuario = relationship("Usuario", back_populates="categorias") # relacionamento com a tabela de usuários
     subcategorias = relationship("Subcategoria", back_populates="categoria") # relacionamento com a tabela de subcategorias
@@ -22,7 +22,7 @@ class Categoria(Base):
 
     # métodos da classe:
 
-    def __init__(self, nome: str, id_usuario: int, cor_hex: str = None, icone: str = None):
+    def __init__(self, nome: str, id_usuario: int = None, cor_hex: str = None, icone: str = None):
         
         self.nome = nome
         self.icone = icone if icone else "tag" # Ícone padrão caso nenhum seja fornecido

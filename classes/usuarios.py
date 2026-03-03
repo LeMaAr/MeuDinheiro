@@ -16,7 +16,7 @@ class Usuario(Base):
     nascimento = Column(Date, nullable=True) # data de nascimento do usuário, pode ser nula caso o usuário não queira informar
     objetivo_reserva = Column(Float, nullable=True) # valor que o usuário estipula como objetivo para sua reserva de emergência, pode ser nulo caso o usuário não queira informar
     tipo_usuario = Column(String) # Se o usuário é comum ou admin
-    id_familia = Column(Integer, ForeignKey("familias.id_familia")) # id da família, se houver. Cria um relationship com a coluna id_familia da tabela famílias
+    id_familia = Column(Integer, ForeignKey("familias.id_familia"), nullable=True) # id da família, se houver. Cria um relationship com a coluna id_familia da tabela famílias
     
     # relacionamentos com outras tabelas:
     familia_vinculada = relationship("Familia", back_populates="usuarios", foreign_keys=[id_familia])

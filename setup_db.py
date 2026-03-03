@@ -1,11 +1,13 @@
-  
-from database.config import engine, Base
+
+from database.config import engine, Base  
 from classes.usuarios import Usuario
 from classes.familias import Familia
-from classes.contas import Conta, ContaCorrente, Cartao, ContaPoupanca, Dinheiro
-from classes.transacoes import Transacao, TransacaoRecorrente
+from classes.contas import Conta
+from classes.transacoes import Transacao
 from classes.metas import Meta
 from classes.regras import RegraTag
+from classes.indices import IndiceFinanceiro 
+from classes.categorias import Categoria
 
 def criar_banco():
     print("Iniciando a criação do banco de dados MeuDinheiro...")
