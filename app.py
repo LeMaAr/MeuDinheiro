@@ -50,6 +50,6 @@ codigo_grafico = f"""
     </script>
 </div>""" # Código HTML e JavaScript para criar um gráfico de rosca usando a biblioteca Chart.js, onde os rótulos são os nomes das contas e os dados são os saldos das contas
                                             
-components.html(codigo_grafico, height= 1200) # Exibe o gráfico usando o componente HTML do Streamlit, definindo a altura do componente para 500 pixels
+components.html(codigo_grafico, height= 1200) # Exibe o gráfico usando o componente HTML do Streamlit, definindo a altura do componente para 1200 pixels
 
         
