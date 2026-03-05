@@ -16,8 +16,10 @@ class Conta(Base):
     ignorar_patrimonio = Column(Boolean, default=False) # se a conta deve ser ignorada no cálculo do patrimônio líquido, útil para contas que não representam um ativo real, como contas de teste ou contas de investimento que não devem ser consideradas no patrimônio líquido do usuário.
     cor_perfil = Column(String, nullable=True) # cor para representar a conta nos gráficos, pode ser nula, caso o usuário não queira escolher uma cor específica para a conta, e nesse caso, o sistema pode atribuir uma cor padrão ou escolher uma cor aleatória para a conta.
     tipo_conta = Column(String) # coluna com o tipo de conta (Ex.: conta corrente, poupança, cartão de crédito, dinheiro, etc.). O campo tipo_conta é usado para categorizar as contas do usuário e pode ser útil para filtrar as contas em gráficos e relatórios, ou para aplicar regras específicas de acordo com o tipo de conta, como por exemplo, não considerar contas do tipo dinheiro no cálculo do patrimônio líquido.
-    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
     limite_seguranca = Column (Float, nullable=True) # limite de segurança estipulado pelo usuário
+    
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
+    id_indice = Column(Integer, ForeignKey("indices.id_indice"), nullable=True) # id do índice financeiro associado à conta, para permitir que o usuário vincule um índice financeiro específico à conta, como a taxa SELIC para uma conta de investimento, ou a inflação medida pelo IPCA para uma conta de poupança. O campo id_indice é usado para criar um relacionamento entre a conta e um índice financeiro, permitindo que o sistema utilize o valor do índice para calcular a rentabilidade da conta ou corrigir o saldo da conta de acordo com a inflação, por exemplo. O campo id_indice é opcional, pois nem todas as contas precisam estar associadas a um índice financeiro.
 
     # colunas específicas para conta corrente, como cheque especial e vencimento do cheque especial. 
     # Essas colunas são usadas apenas para contas do tipo corrente, e podem ser nulas para outros tipos de conta.
@@ -28,12 +30,12 @@ class Conta(Base):
     # Essas colunas são usadas apenas para contas do tipo cartão, e podem ser nulas para outros tipos de conta.
     limite = Column(Float, nullable=True) # coluna de limite para contas do tipo cartão,
     vencimento_cartao = Column(Date, nullable=True) # coluna de vencimento do cartão para contas do tipo cartão, pode ser nula para outros tipos de conta que não têm essa funcionalidade. O campo vencimento_cartao é usado para armazenar a data de vencimento da fatura do cartão de crédito, e pode ser usado para gerar alertas quando a data de vencimento estiver próxima, para que o usuário possa se planejar para pagar a fatura do cartão antes do vencimento e evitar juros e taxas.
-    fechamento_cartao = Column(Date, nullable=True) # coluna de data de fechamento da f
+    fechamento_cartao = Column(Date, nullable=True) # coluna de data de fechamento da fatura para contas do tipo cartão, pode ser nula para outros tipos de conta que não têm essa funcionalidade. O campo fechamento_cartao é usado para armazenar a data de fechamento da fatura do cartão de crédito, e pode ser usado para gerar alertas quando a data de fechamento estiver próxima, para que o usuário possa se planejar para fazer compras ou registrar transações no cartão antes do fechamento da fatura, e assim garantir que essas transações sejam incluídas na fatura atual e não na próxima fatura.
 
     # relacionamentos com outras tabelas:
-    transacoes = relationship("Transacao", back_populates="conta") # relacionamento com a tabela de transações
+    transacoes = relationship("Transacao", back_populates="conta") # relacionamento com a tabela de transações, permitindo acessar as transações associadas à conta através do atributo 'transacoes' do objeto Conta, e acessar a conta associada a uma transação através do atributo 'conta' do objeto Transacao.
     usuario = relationship("Usuario", back_populates="contas") # relacionamento com a tabela de usuários        
-
+    indice = relationship("IndiceFinanceiro", back_populates="contas") # relacionamento com a tabela de índices financeiros, permitindo acessar o índice financeiro associado à conta através do atributo 'indice' do objeto Conta, e acessar as contas associadas a um índice financeiro através do atributo 'contas' do objeto IndiceFinanceiro.
 
     def __init__(self, 
                  nome_conta, 
