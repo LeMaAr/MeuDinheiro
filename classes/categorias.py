@@ -1,3 +1,4 @@
+from classes.transacoes import Transacao
 from database.config import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey
 from sqlalchemy.orm import relationship
@@ -170,3 +171,6 @@ def gerar_cor():
               "#558B2F", "#9E9D24", "#F9A825", "#FF8F00", "#D84315", "#ED1111"]
     
     return random.choice(paleta)
+
+
+        
