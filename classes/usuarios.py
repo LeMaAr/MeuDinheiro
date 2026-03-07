@@ -25,6 +25,7 @@ class Usuario(Base):
     subcategorias = relationship("Subcategoria", back_populates="usuario")
     transacoes = relationship("Transacao", back_populates="usuario")
     contas = relationship("Conta", back_populates="usuario")
+    ativos = relationship("Ativo", back_populates="usuario", cascade="all, delete-orphan")
     
     def __init__(self, 
                  nome, 

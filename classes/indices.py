@@ -1,6 +1,6 @@
 from datetime import datetime
 from database.config import Base, SessionLocal
-from sqlalchemy import Column, Integer, Float, String, DateTime, Date, foreignKey, Boolean
+from sqlalchemy import Column, Integer, Float, String, DateTime, Date
 from sqlalchemy.orm import relationship
 
 class IndiceFinanceiro(Base):
@@ -16,6 +16,7 @@ class IndiceFinanceiro(Base):
     ultima_atualizacao = Column(DateTime, default=datetime.now) # data e hora da última atualização do índice, o default define que, caso o usuário não informe uma data, a data atual será usada. O campo ultima_atualizacao é útil para rastrear quando o índice foi atualizado pela última vez, o que pode ser importante para garantir que os cálculos financeiros estejam usando valores atualizados.
 
     contas = relationship("Conta", back_populates="indice") # relacionamento com a tabela de contas, permitindo acessar as contas associadas a um índice financeiro através do atributo 'contas' do objeto IndiceFinanceiro, e acessar o índice financeiro associado a uma conta através do atributo 'indice' do objeto Conta.
+    ativos = relationship("Ativo", back_populates="indice") # relacionamento com a tabela de ativos, permitindo acessar os ativos associados a um índice financeiro através do atributo 'ativos' do objeto IndiceFinanceiro, e acessar o índice financeiro associado a um ativo através do atributo 'indice' do objeto Ativo.
 
     def __init__(self, nome, valor, data_referencia):
         self.nome = nome

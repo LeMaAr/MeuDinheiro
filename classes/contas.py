@@ -41,6 +41,8 @@ class Conta(Base):
                  nome_conta, 
                  saldo_inicial, 
                  id_usuario,
+                 tipo_conta, # Adicionado
+                 id_indice=None, # Adicionado
                  cheque_especial=None,
                  vencimento=None,
                  limite=None,
@@ -49,17 +51,26 @@ class Conta(Base):
                  tipo_instituicao="banco",
                  ignorar_patrimonio=False,
                  cor_perfil=None,
-                 limite_seguranca=None , 
+                 limite_seguranca=None, 
                  banco=None):
 
         self.nome_conta = nome_conta
         self.saldo_inicial = saldo_inicial
         self.id_usuario = id_usuario
+        self.tipo_conta = tipo_conta # Agora o Python reconhece!
+        self.id_indice = id_indice # Agora o Python reconhece!
         self.tipo_instituicao = tipo_instituicao
         self.ignorar_patrimonio = ignorar_patrimonio
         self.cor_perfil = cor_perfil
         self.limite_seguranca = limite_seguranca
-        self.banco = banco
+        self.banco = banco # Agora o Python reconhece!
+
+        # Configurações específicas
+        self.cheque_especial = cheque_especial
+        self.vencimento = vencimento
+        self.limite = limite
+        self.vencimento_cartao = vencimento_cartao
+        self.fechamento_cartao = fechamento_cartao
 
         # configurações específicas para conta corrente
         self.cheque_especial = cheque_especial

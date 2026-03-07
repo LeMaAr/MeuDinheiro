@@ -7,7 +7,8 @@ from classes.transacoes import Transacao
 from classes.metas import Meta
 from classes.regras import RegraTag
 from classes.indices import IndiceFinanceiro 
-from classes.categorias import Categoria
+from classes.categorias import Categoria, Subcategoria
+from classes.ativos import Ativo 
 
 def criar_banco():
     print("Iniciando a criação do banco de dados MeuDinheiro...")

@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from database.config import Base, SessionLocal
-from sqlalchemy import Column, ForeignKey, Integer, Float, String, DateTime, Date, foreignKey, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, Float, String, DateTime, Date, Boolean
 from sqlalchemy.orm import relationship
 
 class Ativo(Base):
@@ -23,7 +23,7 @@ class Ativo(Base):
     id_familia = Column(Integer, ForeignKey("familias.id_familia"), nullable=True) # id da família associada ao ativo, para permitir que o usuário vincule um ativo a uma família específica, caso ele faça parte de uma família no sistema. O campo id_familia é usado para criar um relacionamento entre o ativo e uma família, permitindo que o sistema associe os ativos às famílias corretas e exiba as informações dos ativos de forma personalizada para cada família. O campo id_familia é opcional, pois nem todos os ativos precisam estar associados a uma família específica.
 
     usuario = relationship("Usuario", back_populates="ativos") # relacionamento com a tabela de usuários, permitindo acessar os ativos de um usuário através do atributo 'ativos' do objeto Usuario, e acessar o usuário associado a um ativo através do atributo 'usuario' do objeto Ativo.
-    transacao = relationship("Transacoes", back_populates="ativo") # relacionamento com a tabela de transações, permitindo acessar a transação associada a um ativo através do atributo 'transacao' do objeto Ativo, e acessar o ativo associado a uma transação através do atributo 'ativo' do objeto Transacao.
+    transacoes = relationship("Transacao", back_populates="ativo", cascade="all, delete-orphan") # relacionamento com a tabela de transações, permitindo acessar as transações associadas a um ativo através do atributo 'transacoes' do objeto Ativo, e acessar o ativo
     indice = relationship("IndiceFinanceiro", back_populates="ativos") # relacionamento com a tabela de índices financeiros, permitindo acessar os ativos associados a um índice financeiro através do atributo 'ativos' do objeto IndiceFinanceiro, e acessar o índice financeiro associado a um ativo através do atributo 'indice' do objeto Ativo.
 
     def __init__(self, nome_ativo, tipo_ativo, quantidade, preco_unitario, data_aquisicao, id_usuario, id_indice=None, id_conta=None, id_familia=None):

@@ -35,12 +35,14 @@ class Transacao(Base):
     id_subcategoria = Column(Integer, ForeignKey("subcategorias.id_subcategoria")) # subcategorias da transação. Ex.: aluguel, conta de luz, conta de água, etc.
     id_conta = Column(Integer, ForeignKey("contas.id_conta")) # id da conta no banco
     id_usuario = Column (Integer, ForeignKey("usuarios.id_usuario")) # id de usuário
+    id_ativo = Column(Integer, ForeignKey("ativos.id_ativo"), nullable=True) # id do ativo, caso a transação esteja relacionada a um ativo, como uma compra ou venda de um ativo. Pode
     
     # relacionamentos com outras tabelas: 
     categoria = relationship("Categoria", back_populates="transacoes") # relacionamento com a tabela de categorias
     subcategoria = relationship("Subcategoria", back_populates="transacoes") # relacionamento com a tabela de subcategorias
     conta = relationship("Conta", back_populates="transacoes")  # relacionamento com a tabela de contas
     usuario = relationship("Usuario", back_populates="transacoes") # relacionamento com a tabela de usuários
+    ativo = relationship("Ativo", back_populates="transacoes") # relacionamento com a tabela de ativos, permitindo acessar o ativo associado a uma transação através do atributo 'ativo' do objeto Transacao
     
     
     def __init__(self, 
