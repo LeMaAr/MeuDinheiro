@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800&display=swap');
+
+/* assets/style.css */
+:root {
+    --card-radius: 50px; /* Centralize o valor de 50px aqui */
+    --transition-speed: 0.3s;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: var(--bg-color); /* Força o fallback do root se necessário */
+}
+
+#main-container {
+    min-height: 100vh;
+    background-color: var(--bg-color); /* Aplica a cor do tema selecionado */
+    color: var(--text-primary);
+    padding: 20px;
+}
+
+/* Definição dos Temas */
+.tema-escuro-vivo { --bg-color: #0F0F11; --card-bg: #1C1C23; --accent-color: #00cfb4; --text-primary: #ffffff; --transition-speed:0.3s}
+.tema-claro-vivo { --bg-color: #f5f5f5; --card-bg: #ffffff; --text-primary: #333; --accent-color: #00cfb4; }
+.tema-escuro-pastel { --bg-color: #1a1a2e; --card-bg: #16213e; --accent-color: #95adbe; }
+
+body { background-color: var(--bg-color); 
+    color: var(--text-primary);
+    transition: background-color var(--transition-speed); 
+}
+
+/* ajustes nos widgets */
+.card-financeiro { background-color: var(--card-bg); 
+    border-radius: 50px; 
+    padding: 35px 50px;
+    margin: 20px;
+    border: 0px solid rgba(255,255,255,0); 
+}
+
+/* ajustes no título */
+.text-title { color: var(--accent-color); 
+    margin-bottom: 0;
+    font-weight: 800; 
+    padding: 20px;
+    letter-spacing: 5px; 
+}
+
+/* ajustes nos sub-títulos */
+.text-subtitle { font-size: 0.8rem; 
+    letter-spacing: 2px; 
+    opacity: 0.7; 
+}
+
+.card-label { font-size: 0.9rem;
+    font-weight: 700; 
+    color: var(--accent-color);
+    letter-spacing: 2px; 
+    opacity: 0.8; 
+    margin-bottom: 10px; 
+}
+
+
+.card-value { font-weight: 700; 
+    font-size: 2.5rem; 
+    margin: 0; 
+}

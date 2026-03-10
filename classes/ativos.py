@@ -87,7 +87,7 @@ class Ativo(Base):
         # propriedade para calcular o total de dividendos recebidos de um ativo, levando em consideração as transações associadas ao ativo que correspondem a recebimento de dividendos. 
         # O total de dividendos recebidos pode ser calculado somando os valores das transações associadas ao ativo que correspondem a recebimento de dividendos. 
         # Essa propriedade é útil para exibir o total de dividendos recebidos de um ativo específico, o que pode ser relevante para avaliar a rentabilidade do investimento em um ativo que paga dividendos e tomar decisões sobre alocação de ativos.
-        return sum(t.valor for t in self.transacao if t.tipo == "dividendo")
+        return sum(t.valor for t in self.transacoes if t.tipo == "dividendo")
 
     @property
     def ganhos_perdas(self):

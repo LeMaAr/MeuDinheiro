@@ -57,13 +57,13 @@ class Conta(Base):
         self.nome_conta = nome_conta
         self.saldo_inicial = saldo_inicial
         self.id_usuario = id_usuario
-        self.tipo_conta = tipo_conta # Agora o Python reconhece!
-        self.id_indice = id_indice # Agora o Python reconhece!
+        self.tipo_conta = tipo_conta 
+        self.id_indice = id_indice 
         self.tipo_instituicao = tipo_instituicao
         self.ignorar_patrimonio = ignorar_patrimonio
         self.cor_perfil = cor_perfil
         self.limite_seguranca = limite_seguranca
-        self.banco = banco # Agora o Python reconhece!
+        self.banco = banco 
 
         # Configurações específicas
         self.cheque_especial = cheque_especial
@@ -72,14 +72,6 @@ class Conta(Base):
         self.vencimento_cartao = vencimento_cartao
         self.fechamento_cartao = fechamento_cartao
 
-        # configurações específicas para conta corrente
-        self.cheque_especial = cheque_especial
-        self.vencimento = vencimento
-        
-        # configurações específicas para cartão de crédito
-        self.limite = limite
-        self.vencimento_cartao = vencimento_cartao
-        self.fechamento_cartao = fechamento_cartao
 
     @property
     def saldo_atual(self):

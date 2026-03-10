@@ -23,7 +23,7 @@ class Meta(Base):
         self.data_inicio = data_inicio
         self.prazo_final = prazo_final
         self.id_usuario = id_usuario
-        self. id_familia = id_familia
+        self.id_familia = id_familia
 
     @property
     def progresso(self):
