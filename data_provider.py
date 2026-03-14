@@ -1,13 +1,14 @@
 import pandas as pd
 from database.config import SessionLocal
 from classes import Transacao, Categoria, Conta 
+from sqlalchemy import func
 
 def get_saldo_geral(id_usuario):
     """Retorna apenas o valor do saldo somado de todas as contas."""
     db = SessionLocal()
     try:
         contas = db.query(Conta).filter(Conta.id_usuario == id_usuario).all()
-        return sum(c.saldo_atual for c in contas) 
+        return sum(c.saldo_atual for c in contas) #
     finally:
         db.close()
 
@@ -20,7 +21,7 @@ def get_data_despesas(id_usuario):
             Categoria.nome.label("categoria"),
             Categoria.cor_hex
         ).join(Categoria, Transacao.id_categoria == Categoria.id_categoria)\
-         .filter(Transacao.id_usuario == id_usuario, Transacao.tipo == "despesa").all() #
+         .filter(Transacao.id_usuario == id_usuario, func.lower(Transacao.tipo) == "despesa").all() #
         
         df = pd.DataFrame(query)
         return df.to_dict('records') if not df.empty else []
@@ -47,6 +48,38 @@ def get_fluxo_caixa(id_usuario):
         return df.to_dict('records') if not df.empty else []
     except Exception as e:
         print(f"Erro em get_fluxo_caixa: {e}")
+        return []
+    finally:
+        db.close()
+
+def get_ultimas_movimentacoes(id_usuario, limite=5):
+    """Busca as transações mais recentes para o widget de resumo."""
+    db = SessionLocal()
+    try:
+        from classes import Transacao, Categoria
+        
+        # Query unindo transações e categorias para pegar nomes e cores
+        query = db.query(
+            Transacao.descricao,
+            Transacao.valor,
+            Transacao.data,
+            Transacao.tipo,
+            Categoria.nome.label("categoria")
+        ).join(Categoria, Transacao.id_categoria == Categoria.id_categoria)\
+         .filter(Transacao.id_usuario == id_usuario)\
+         .order_by(Transacao.data.desc())\
+         .limit(limite).all()
+        
+        # Converte para DataFrame para facilitar a formatação de data
+        import pandas as pd
+        df = pd.DataFrame(query)
+        
+        if not df.empty:
+            df['data'] = df['data'].dt.strftime('%d/%m/%Y')
+            return df.to_dict('records')
+        return []
+    except Exception as e:
+        print(f"Erro ao buscar últimas movimentações: {e}")
         return []
     finally:
         db.close()
