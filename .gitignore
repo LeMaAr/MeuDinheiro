@@ -1,5 +1,6 @@
 .venv/
 # Arquivos de sistema do Windows
 desktop.ini
+meudinheiro.db
 Thumbs.db
 *.db
