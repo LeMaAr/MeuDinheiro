@@ -1,98 +1,163 @@
-from dash import Dash, html, dcc, Input, Output, clientside_callback
+import dash
+from dash import html, dcc, Input, Output, clientside_callback
 import dash_bootstrap_components as dbc
-from data_provider import get_saldo_geral, get_data_despesas, get_ultimas_movimentacoes
+from datetime import datetime
+import locale
 
-# 1. DEFINIÇÃO DE COMPONENTES (MOLDES)
-def criar_widget(tipo, dados_grafico=None, dados_mov=None):
-    if tipo == "despesas_cat":
-        return html.Div(className="widget-card", children=[
-            html.H4("DESPESAS POR CATEGORIA", className="card-title-inner"),
+# Importando suas funções
+from data_provider import get_saldo_geral, get_data_despesas
+
+# 1. Adicionamos o Chart.js de forma limpa aqui
+app = dash.Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_scripts=["https://cdn.jsdelivr.net/npm/chart.js"] # Carrega o motor do gráfico
+)
+
+app.scripts.config.serve_locally = True
+
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
+# --- COMPONENTES DE INTERFACE ---
+
+def criar_card_saldo():
+    return html.Div(className="widget-card-saldo", children=[
+        html.H4("SALDO EM CONTAS", className="card-title-inner"),
+        html.H2(id="saldo-display", className="saldo-valor")
+    ])
+
+def criar_widget_grafico():
+    return html.Div(className="widget-card-grafico", children=[
+        html.H4("DESPESAS POR CATEGORIA", className="card-title-inner"),
+        html.Div(id="titulo-periodo", className="titulo-mes-referencia"),
+        
+        # Container Flex para Gráfico (Esquerda) e Legenda (Direita)
+        html.Div(className="layout-grafico-container", children=[
             html.Div(className="chart-container", children=[
                 html.Canvas(id="chart-donut-despesas")
             ]),
-            dcc.Store(id="store-dados-despesas", data=dados_grafico)
-        ])
-    elif tipo == "ultimas_mov":
-        rows = [
-            html.Div(className="movimentacao-row", children=[
-                html.Span(m['descricao'], className="mov-desc"),
-                html.Span(f"R$ {m['valor']:,.2f}", 
-                         className="mov-valor " + ("red" if m['tipo'] == 'despesa' else "green")),
-                html.Span(m['data'], className="mov-data")
-            ]) for m in (dados_mov or [])
-        ]
-        return html.Div(className="widget-card", children=[
-            html.H4("ÚLTIMAS MOVIMENTAÇÕES", className="card-title-inner"),
-            html.Div(rows, className="tabela-container")
-        ])
-    
-# 2. CONFIGURAÇÃO DO APP
-app = Dash(__name__, 
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
-    external_scripts=["https://cdn.jsdelivr.net/npm/chart.js"]
-)
+            html.Div(id="legenda-lateral-container", className="legenda-lateral")
+        ]),
+        dcc.Store(id="store-dados-despesas")
+    ])
 
-# 3. LAYOUT (O QUE APARECE NA TELA)
-app.layout = html.Div(id="main-container", className="tema-escuro-vivo", children=[
+# --- LAYOUT PRINCIPAL ---
+
+app.layout = html.Div(id="main-container", className="escuro-vivo", children=[
+    dcc.Interval(id="interval-load", interval=10000, n_intervals=0), # Atualiza a cada 10s
     
-    # Header do seu design do Illustrator
+    # Cabeçalho e Seletores
     html.Div(className="header-container", children=[
-        html.H1("RESUMO", className="text-title"),
-        html.P("GRÁFICOS | CONTAS | INVESTIMENTOS | METAS", className="text-subtitle"),
+        html.H1("RESUMO", className="main-title"),
+        html.Div(className="controles-row", children=[
+            html.Div([
+                html.Label("Selecione o Tema:"),
+                dcc.Dropdown(
+                    id="theme-selector",
+                    options=[
+                        {'label': 'Escuro Vivo', 'value': 'escuro-vivo'},
+                        {'label': 'Claro UI', 'value': 'claro-ui'}
+                    ],
+                    value='escuro-vivo',
+                    clearable=False
+                )
+            ], className="control-group"),
+            
+            html.Div([
+                html.Label("Período:"),
+                dcc.Dropdown(
+                    id="filtro-tempo",
+                    options=[
+                        {'label': 'Hoje', 'value': 'hoje'},
+                        {'label': 'Semanal', 'value': 'semanal'},
+                        {'label': 'Mensal', 'value': 'mensal'},
+                        {'label': 'Trimestral', 'value': 'trimestral'},
+                        {'label': 'Semestral', 'value': 'semestral'},
+                        {'label': 'Anual', 'value': 'anual'},
+                    ],
+                    value='mensal',
+                    clearable=False
+                )
+            ], className="control-group")
+        ])
     ]),
 
-    # Seletor de Tema (Dentro do layout)
-    html.Div(className="config-area", children=[
-        html.Label("Selecione o Tema:", style={'color': 'white'}),
-        dcc.Dropdown(
-            id='theme-selector',
-            options=[
-                {'label': 'Escuro Vivo', 'value': 'tema-escuro-vivo'},
-                {'label': 'Claro Vivo', 'value': 'tema-claro-vivo'},
-                {'label': 'Escuro Pastel', 'value': 'tema-escuro-pastel'}
-            ],
-            value='tema-escuro-vivo',
-            style={'color': 'black', 'width': '200px'}
-        ),
-    ]),
-
-    # Card de Saldo
-    html.Div(className="card-financeiro", children=[
-        html.P("SALDO EM CONTAS", className="card-label"),
-        html.H2(id="saldo-display", className="card-value"),
-    ]),
-
-    # Container de Widgets Dinâmicos
-    html.Div(id="widget-container", children=[
-    criar_widget("despesas_cat"),
-    criar_widget("ultimas_mov")
-]),
-
-    # Trigger para carregar os dados
-    dcc.Interval(id='interval-load', interval=1*500, n_intervals=0, max_intervals=1)
+    # Grid de Widgets
+    html.Div(className="content-grid", children=[
+        criar_card_saldo(),
+        criar_widget_grafico()
+    ])
 ])
 
-# 4. CALLBACKS (LÓGICA)
+# --- CALLBACKS (CÉREBRO DO APP) ---
 
- 
-# Mudar o Tema
+# 1. Callback de Tema
 @app.callback(
     Output("main-container", "className"),
     Input("theme-selector", "value")
 )
-
 def update_theme(selected_theme):
-    return selected_theme
+    return selected_theme or "escuro-vivo"
 
-# Ponte JavaScript para o Chart.js
+# 2. Callback de Dados (Saldo + Gráfico + Legenda)
+@app.callback(
+    [Output("saldo-display", "children"),
+     Output("store-dados-despesas", "data"),
+     Output("legenda-lateral-container", "children"),
+     Output("titulo-periodo", "children")],
+    [Input("interval-load", "n_intervals"),
+     Input("filtro-tempo", "value")]
+)
+def atualizar_dados_dashboard(n, periodo):
+    id_user = 1
+    periodo = periodo or "mensal"
+    
+    # Busca dados no banco
+    saldo = get_saldo_geral(id_user)
+    dados_grafico = get_data_despesas(id_user, periodo=periodo)
+    
+    # Formata Saldo
+    saldo_txt = f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    
+    # Nome do mês para o título
+    mes_ref = datetime.now().strftime('%B %Y').upper()
+    
+    # Gera itens da legenda lateral (bolinhas coloridas)
+    itens_legenda = [
+        html.Div(className="legenda-row", children=[
+            html.Div(className="legenda-cor", style={"backgroundColor": i['cor_hex']}),
+            html.Span(i['categoria'], className="legenda-nome"),
+            html.Span(f"R$ {i['valor']:,.2f}", className="legenda-valor")
+        ]) for i in dados_grafico
+    ]
+    
+    return saldo_txt, dados_grafico, itens_legenda, mes_ref
+
+# 3. Ponte JavaScript para o Chart.js
 clientside_callback(
     """
     function(dados) {
         if(dados && window.dash_clientside && window.dash_clientside.clientside) {
-            // Chamada com pequena espera para garantir o DOM pronto
-            setTimeout(function() {
-                window.dash_clientside.clientside.renderizarGraficoDonut(dados);
-            }, 100);
+            window.dash_clientside.clientside.renderizarGraficoDonut(dados);
         }
         return "";
     }
@@ -101,28 +166,5 @@ clientside_callback(
     Input("store-dados-despesas", "data")
 )
 
-@app.callback(
-    [Output("saldo-display", "children"),
-     Output("store-dados-despesas", "data"),
-     Output("widget-container", "children")],
-    [Input("interval-load", "n_intervals")]
-)
-def carregar_dados_reais(n):
-    id_user = 1
-    saldo = get_saldo_geral(id_user)
-    dados_grafico = get_data_despesas(id_user)
-    dados_mov = get_ultimas_movimentacoes(id_user)
-    
-    saldo_formatado = f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    
-    # Criamos os widgets injetando os dados buscados
-    widgets = [
-        criar_widget("despesas_cat", dados_grafico=dados_grafico),
-        criar_widget("ultimas_mov", dados_mov=dados_mov)
-    ]
-    
-    return saldo_formatado, dados_grafico, widgets
-
 if __name__ == "__main__":
     app.run(debug=True)
-
