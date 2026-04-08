@@ -178,3 +178,20 @@ def detectar_duplicata(db, data, valor, descricao, id_usuario):
 
 # if __name__ == "__main__":
 #    importar_extrato_csv("Scripts_aux/meu_extrato_teste.csv", id_conta=1) # Importa o arquivo CSV para a conta com ID 1 (ajuste conforme necessário) 
+
+
+""" IMPORTANTE: SEGUE AJUSTE A SER IMPLEMENTADO, REVER ISSO:
+
+# No seu importadorCSV.py:
+
+# Antes: buscava apenas do usuário
+# categoria_obj = db.query(Categoria).filter_by(nome="Importado", id_usuario=id_usuario).first() 
+
+# Depois: busca a GLOBAL (id_usuario is None)
+categoria_obj = db.query(Categoria).filter(
+    Categoria.nome == "Importado", 
+    Categoria.id_usuario == None
+).first()
+
+
+"""

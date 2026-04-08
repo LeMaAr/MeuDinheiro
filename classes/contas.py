@@ -37,6 +37,15 @@ class Conta(Base):
     usuario = relationship("Usuario", back_populates="contas") # relacionamento com a tabela de usuários        
     indice = relationship("IndiceFinanceiro", back_populates="contas") # relacionamento com a tabela de índices financeiros, permitindo acessar o índice financeiro associado à conta através do atributo 'indice' do objeto Conta, e acessar as contas associadas a um índice financeiro através do atributo 'contas' do objeto IndiceFinanceiro.
 
+    # atalho para reconhecer o valor das transações pendentes
+    transacoes_pendentes = relationship(
+        "Transacao", 
+        primaryjoin="and_(Conta.id_conta == Transacao.id_conta, "
+                    "Transacao.quitada == False, "
+                    "Transacao.tipo == 'despesa')", 
+        viewonly=True
+    )
+    
     def __init__(self, 
                  nome_conta, 
                  saldo_inicial, 
@@ -71,7 +80,6 @@ class Conta(Base):
         self.limite = limite
         self.vencimento_cartao = vencimento_cartao
         self.fechamento_cartao = fechamento_cartao
-
 
     @property
     def saldo_atual(self):
@@ -111,26 +119,53 @@ class Conta(Base):
         # Soma o dinheiro real com o limite do banco
         return self.saldo_atual + self.cheque_especial    
     
+    @property
+    def fatura_atual_cartao(self):
+        # essa property vai ser responsável por passar o valor da fatura atual, calculando o valor acumulado de gastos que ainda não foram quitados
+        if self.tipo_conta == "cartao":
+            return sum(t.valor for t in self.transacoes_pendentes)
+        return 0.0
+    
+    @property
+    def uso_cheque_especial(self):
+        # property que nos dirá o gasto com o cheque especial do usuário, pegamos o saldo atual e se estiver negativo, retornamos o valor absoluto e com isso sabemos o uso do Cheque especial.
+        if self.tipo_conta == "corrente" and self.saldo_atual < 0:
+            return abs(self.saldo_atual)
+        return 0.0
+
     def verificar_gatilhos(self):
         """ função para verificar os gatilhos de alerta relacionados ao saldo da conta, como o limite de segurança e o uso do cheque especial. 
         A função percorre as transações da conta, calcula o saldo atual e verifica se o saldo está abaixo do limite de segurança estipulado pelo usuário 
         ou se o cheque especial está sendo usado. Se alguma dessas condições for verdadeira, a função adiciona uma mensagem de alerta à lista de alertas, 
         que pode ser exibida para o usuário. """
-        
-        alertas = [] # lista para armazenar os alertas gerados pela função
-        saldo = self.saldo_atual # calcula o saldo atual da conta usando a propriedade saldo_atual, que leva em consideração o saldo inicial e as transações associadas à conta.
-        
-        # verifica se o saldo está abaixo do limite de segurança estipulado pelo usuário, e se o limite de segurança é maior que 0 para evitar alertas desnecessários 
-        # quando o usuário não estipulou um limite de segurança.
-        if self.limite_seguranca > 0 and saldo < self.limite_seguranca and saldo > 0:
-            alertas.append(f"Atenção! O saldo da conta {self.nome_conta} está abaixo do limite estipulado de R${self.limite_seguranca}.")
+        try:
+            alertas = [] # lista para armazenar os alertas gerados pela função
+            saldo = self.saldo_atual # calcula o saldo atual da conta usando a propriedade saldo_atual, que leva em consideração o saldo inicial e as transações associadas à conta.
+            
+            # verifica se o saldo está abaixo do limite de segurança estipulado pelo usuário, e se o limite de segurança é maior que 0 para evitar alertas desnecessários 
+            # quando o usuário não estipulou um limite de segurança.
+            
+            limite = self.limite_seguranca or 0
 
-        # verifica se o saldo está negativo, o que indica que o cheque especial está sendo usado, e se a conta tem a coluna cheque_especial para evitar erros em contas 
-        # que não têm essa funcionalidade. Se o cheque especial estiver sendo usado, calcula o percentual do cheque especial que está sendo utilizado e 
-        # adiciona um alerta à lista de alertas.
-        if hasattr(self, 'cheque_especial') and saldo < 0:
-            percentual_uso = (abs(saldo) / self.cheque_especial)*100
-            alertas.append(f"Alerta: Você está usando {percentual_uso:.1f}% do seu cheque especial.")
+            if limite > 0 and saldo < limite and saldo > 0: 
+                alertas.append(
+                    f"Atenção! O saldo da conta {self.nome_conta} está abaixo do limite estipulado de R${limite:.2f}."
+                    )
+            
+            cheque = self.cheque_especial or 0
+
+            if cheque > 0 and saldo < 0:
+                percentual_uso = (abs(saldo) / cheque)* 100
+                alertas.append(
+                    f"Alerta: Você está usando {percentual_uso:.1f}% do seu cheque especial na conta {self.nome_conta}."
+                )
+
+            return alertas
+        
+        except Exception as e:
+            print (f"Não foi possível verificar os gatilho: {e}")
+            raise e
+        
 
     def add_conta(self):
         db = SessionLocal()

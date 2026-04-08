@@ -45,14 +45,14 @@ class Transacao(Base):
     ativo = relationship("Ativo", back_populates="transacoes") # relacionamento com a tabela de ativos, permitindo acessar o ativo associado a uma transação através do atributo 'ativo' do objeto Transacao
     
     
-    def __init__(self, 
-                 tipo_registro: str,
+    def __init__(self,
                  valor: float, 
                  tipo: str, 
                  id_conta: int, 
                  id_usuario: int,
                  essencial: bool = False,
                  automatico: bool = False,
+                 tipo_registro: str = "comum",
                  data_inicio: Optional[date] = None, 
                  ciclo: Optional[str] = None, 
                  data_termino: Optional[date] = None,
