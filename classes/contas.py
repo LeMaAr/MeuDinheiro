@@ -1,38 +1,62 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean, Enum
 from database.config import Base, SessionLocal
 from sqlalchemy.orm import relationship
+import datetime
+import enum
 
-# Criando a classe contas:
+# region ENUMS
 
+class TipoInstituicao(enum.Enum):
+    banco = "banco"
+    fintech = "fintech"
+    corretora = "corretora"
+    carteira_digital = "carteira_digital"
+    outro = "outro"
+
+class SubtipoConta(enum.Enum):
+    corrente = "corrente"
+    cartao = "cartao"
+    poupanca = "poupanca"
+    dinheiro = "dinheiro"
+    investimento = "investimento"
+    salario = "salario"
+    outro = "outro"
+
+#endregion
+
+"""############################### CONTA (BASE) ########################################################"""
 class Conta(Base):
-
+#region TABELA E COLUNAS
     __tablename__ = "contas" #criando a tabela conta.
 
     id_conta = Column(Integer, primary_key=True, autoincrement=True) # coluna id conta
-    saldo_inicial = Column(Float) # coluna de saldo inicial
+    saldo_inicial = Column(Float, default=0.0) # coluna de saldo inicial
     nome_conta = Column(String) # Coluna nome da conta
     banco = Column(String) # nome do banco
-    tipo_instituicao = Column(String, default="banco") # tipo de instituição financeira, como banco, fintech, corretora, etc.
+    tipo_instituicao = Column(Enum(TipoInstituicao), default=TipoInstituicao.banco) # tipo de instituição financeira, como banco, fintech, corretora, etc.
     ignorar_patrimonio = Column(Boolean, default=False) # se a conta deve ser ignorada no cálculo do patrimônio líquido, útil para contas que não representam um ativo real, como contas de teste ou contas de investimento que não devem ser consideradas no patrimônio líquido do usuário.
     cor_perfil = Column(String, nullable=True) # cor para representar a conta nos gráficos, pode ser nula, caso o usuário não queira escolher uma cor específica para a conta, e nesse caso, o sistema pode atribuir uma cor padrão ou escolher uma cor aleatória para a conta.
-    tipo_conta = Column(String) # coluna com o tipo de conta (Ex.: conta corrente, poupança, cartão de crédito, dinheiro, etc.). O campo tipo_conta é usado para categorizar as contas do usuário e pode ser útil para filtrar as contas em gráficos e relatórios, ou para aplicar regras específicas de acordo com o tipo de conta, como por exemplo, não considerar contas do tipo dinheiro no cálculo do patrimônio líquido.
+    tipo_conta = Column(String, nullable=False) # coluna com o tipo de conta (Ex.: conta corrente, poupança, cartão de crédito, dinheiro, etc.). O campo tipo_conta é usado para categorizar as contas do usuário e pode ser útil para filtrar as contas em gráficos e relatórios, ou para aplicar regras específicas de acordo com o tipo de conta, como por exemplo, não considerar contas do tipo dinheiro no cálculo do patrimônio líquido.
+    subtipo_conta = Column(Enum(SubtipoConta), nullable=True) # coluna com o subtipo de conta. O campo subtipo_conta é usado para fornecer uma categorização mais detalhada das contas do usuário, permitindo uma organização mais granular e personalizada das contas, e pode ser útil para filtrar as contas em gráficos e relatórios, ou para aplicar regras específicas de acordo com o subtipo de conta.
     limite_seguranca = Column (Float, nullable=True) # limite de segurança estipulado pelo usuário
+    ativa = Column(Boolean, default=True) # campo para indicar se a conta está ativa ou inativa, permitindo que o usuário desative contas que não estão mais em uso sem precisar deletá-las do sistema, e assim manter um histórico das contas anteriores. O campo ativa é usado para filtrar as contas ativas e inativas em gráficos e relatórios, e para evitar que contas inativas sejam consideradas em cálculos como o saldo total ou o patrimônio líquido do usuário.
     
-    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
-    id_indice = Column(Integer, ForeignKey("indices.id_indice"), nullable=True) # id do índice financeiro associado à conta, para permitir que o usuário vincule um índice financeiro específico à conta, como a taxa SELIC para uma conta de investimento, ou a inflação medida pelo IPCA para uma conta de poupança. O campo id_indice é usado para criar um relacionamento entre a conta e um índice financeiro, permitindo que o sistema utilize o valor do índice para calcular a rentabilidade da conta ou corrigir o saldo da conta de acordo com a inflação, por exemplo. O campo id_indice é opcional, pois nem todas as contas precisam estar associadas a um índice financeiro.
-
-    # colunas específicas para conta corrente, como cheque especial e vencimento do cheque especial. 
+    # CONTA CORRENTE
     # Essas colunas são usadas apenas para contas do tipo corrente, e podem ser nulas para outros tipos de conta.
-    cheque_especial = Column(Float, nullable=True) # coluna de cheque especial para contas correntes, pode ser nula para outros tipos de conta que não têm essa funcionalidade, como contas de poupança ou dinheiro. O campo cheque_especial é usado para armazenar o valor do limite do cheque especial disponível para a conta corrente, e pode ser usado para calcular o limite disponível e gerar alertas quando o saldo da conta estiver próximo ou ultrapassar o limite do cheque especial.
-    vencimento = Column (Date, nullable=True) # data de vencimento do cheque especial para contas correntes, pode ser nula para outros tipos de conta que não têm essa funcionalidade. O campo vencimento é usado para armazenar a data de vencimento do cheque especial da conta corrente, e pode ser usado para gerar alertas quando a data de vencimento estiver próxima, para que o usuário possa se planejar para pagar o valor utilizado do cheque especial antes do vencimento e evitar juros e taxas.
-    
-    # colunas específicas para cartão de crédito, como limite do cartão, vencimento da fatura e data de fechamento da fatura. 
-    # Essas colunas são usadas apenas para contas do tipo cartão, e podem ser nulas para outros tipos de conta.
-    limite = Column(Float, nullable=True) # coluna de limite para contas do tipo cartão,
-    vencimento_cartao = Column(Date, nullable=True) # coluna de vencimento do cartão para contas do tipo cartão, pode ser nula para outros tipos de conta que não têm essa funcionalidade. O campo vencimento_cartao é usado para armazenar a data de vencimento da fatura do cartão de crédito, e pode ser usado para gerar alertas quando a data de vencimento estiver próxima, para que o usuário possa se planejar para pagar a fatura do cartão antes do vencimento e evitar juros e taxas.
-    fechamento_cartao = Column(Date, nullable=True) # coluna de data de fechamento da fatura para contas do tipo cartão, pode ser nula para outros tipos de conta que não têm essa funcionalidade. O campo fechamento_cartao é usado para armazenar a data de fechamento da fatura do cartão de crédito, e pode ser usado para gerar alertas quando a data de fechamento estiver próxima, para que o usuário possa se planejar para fazer compras ou registrar transações no cartão antes do fechamento da fatura, e assim garantir que essas transações sejam incluídas na fatura atual e não na próxima fatura.
+    cheque_especial = Column(Float, default= 0.0 ) # coluna de cheque especial para contas correntes, por padrão será 0.0 para contas que não possuam essa funcionalidade.
+    vencimento = Column (Integer, nullable=True) #  Dia do mês que vence o cheque especial para contas correntes com essa função.
 
-    # relacionamentos com outras tabelas:
+    # CARTÃO DE CRÉDITO
+    # Essas colunas são usadas apenas para contas do tipo cartão, e podem ser nulas para outros tipos de conta.
+    limite = Column(Float, default=0.0 ) # coluna de limite para contas do tipo cartão,
+    vencimento_cartao = Column(Integer, nullable=True) #  Dia do mês que vence a fatura do cartão.
+    fechamento_cartao = Column(Integer, nullable=True) #  Dia do mês que em que a fatura do cartão é fechada.
+
+    # CHAVES ESTRANGEIRAS
+    id_familia = Column(Integer, ForeignKey("familias.id_familia"), nullable=True) # coluna de id da família, que permitirá associar a conta a uma família. Pode ser nula para contas que não sejam associadas a uma família.
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
+
+    # RELACIONAMENTOS COM OUTRAS TABELAS  
     transacoes = relationship("Transacao", back_populates="conta") # relacionamento com a tabela de transações, permitindo acessar as transações associadas à conta através do atributo 'transacoes' do objeto Conta, e acessar a conta associada a uma transação através do atributo 'conta' do objeto Transacao.
     usuario = relationship("Usuario", back_populates="contas") # relacionamento com a tabela de usuários        
     indice = relationship("IndiceFinanceiro", back_populates="contas") # relacionamento com a tabela de índices financeiros, permitindo acessar o índice financeiro associado à conta através do atributo 'indice' do objeto Conta, e acessar as contas associadas a um índice financeiro através do atributo 'contas' do objeto IndiceFinanceiro.
@@ -42,44 +66,58 @@ class Conta(Base):
         "Transacao", 
         primaryjoin="and_(Conta.id_conta == Transacao.id_conta, "
                     "Transacao.quitada == False, "
-                    "Transacao.tipo == 'despesa')", 
+                    "Transacao.tipo != 'receita')", 
         viewonly=True
     )
-    
+
+    # configuração para Single Table Inheritance (STI), permitindo que as subclasses de Conta sejam armazenadas na mesma tabela 'contas' e diferenciadas pelo campo 'tipo_conta'.
+    __mapper_args__ = {
+        'polymorphic_on': tipo_conta, # campo usado para diferenciar os tipos de conta na tabela, permitindo que o SQLAlchemy saiba qual classe usar para instanciar os objetos ao recuperar os dados do banco.
+        'polymorphic_identity': 'conta_base' # valor do campo tipo_conta que identifica os registros que correspondem à classe base Conta, ou seja, registros com tipo_conta igual a 'conta' serão instanciados como objetos da classe Conta, enquanto registros com tipo_conta igual a 'corrente' ou 'cartao' serão instanciados como objetos das classes Conta_Corrente e Conta_Cartao, respectivamente.
+    }
+
+#endregion
+
+#region INIT    
     def __init__(self, 
-                 nome_conta, 
-                 saldo_inicial, 
-                 id_usuario,
-                 tipo_conta, # Adicionado
-                 id_indice=None, # Adicionado
-                 cheque_especial=None,
+                 nome_conta,      # Obrigatório (Sem default)
+                 id_usuario,      # Obrigatório (Sem default)
+                 tipo_conta,      # Obrigatório (Sem default)
+                 saldo_inicial=0.0,  
+                 subtipo_conta=None,
+                 cheque_especial=0.0,
                  vencimento=None,
-                 limite=None,
-                 vencimento_cartao=None, 
+                 limite=0.0,
+                 vencimento_cartao=None,
                  fechamento_cartao=None,
+                 ativa=True,
+                 id_indice=None,
                  tipo_instituicao="banco",
                  ignorar_patrimonio=False,
                  cor_perfil=None,
-                 limite_seguranca=None, 
+                 limite_seguranca=None,
                  banco=None):
 
         self.nome_conta = nome_conta
         self.saldo_inicial = saldo_inicial
         self.id_usuario = id_usuario
         self.tipo_conta = tipo_conta 
+        self.subtipo_conta = subtipo_conta
+        self.cheque_especial = cheque_especial
+        self.vencimento = vencimento   
+        self.limite = limite
+        self.vencimento_cartao = vencimento_cartao
+        self.fechamento_cartao = fechamento_cartao
+        self.ativa = ativa
         self.id_indice = id_indice 
         self.tipo_instituicao = tipo_instituicao
         self.ignorar_patrimonio = ignorar_patrimonio
         self.cor_perfil = cor_perfil
         self.limite_seguranca = limite_seguranca
         self.banco = banco 
+#endregion
 
-        # Configurações específicas
-        self.cheque_especial = cheque_especial
-        self.vencimento = vencimento
-        self.limite = limite
-        self.vencimento_cartao = vencimento_cartao
-        self.fechamento_cartao = fechamento_cartao
+#region FUNÇÕES DE CONTA
 
     @property
     def saldo_atual(self):
@@ -89,10 +127,14 @@ class Conta(Base):
         
         # o saldo atual começa com o saldo inicial da conta
         total = self.saldo_inicial
-        
+        hoje = datetime.date.today() # adiciona o dia de hoje em uma variável para comparar com a data das transações.
+
         # percorre as transações associadas à conta e atualiza o saldo de acordo com o tipo de transação (receita ou despesa)
         for t in self.transacoes:
             
+            if t.data > hoje: # se a data da transação for maior que a data de hoje, ou seja, se a transação for futura, ela não é considerada no cálculo do saldo atual, pois ainda não ocorreu.
+                continue
+
             if t.ignore: # se a transação estiver marcada para ser ignorada, ela não é considerada no cálculo do saldo.
                 continue
 
@@ -106,33 +148,7 @@ class Conta(Base):
                     total -= t.valor
 
         return total
-  
-    @property
-    def limite_disponivel(self):
-        # Se o saldo for negativo, o cheque especial está sendo usado
-        if self.saldo_atual < 0:
-            return self.cheque_especial + self.saldo_atual
-        return self.cheque_especial
-
-    @property
-    def saldo_total_disponivel(self):
-        # Soma o dinheiro real com o limite do banco
-        return self.saldo_atual + self.cheque_especial    
     
-    @property
-    def fatura_atual_cartao(self):
-        # essa property vai ser responsável por passar o valor da fatura atual, calculando o valor acumulado de gastos que ainda não foram quitados
-        if self.tipo_conta == "cartao":
-            return sum(t.valor for t in self.transacoes_pendentes)
-        return 0.0
-    
-    @property
-    def uso_cheque_especial(self):
-        # property que nos dirá o gasto com o cheque especial do usuário, pegamos o saldo atual e se estiver negativo, retornamos o valor absoluto e com isso sabemos o uso do Cheque especial.
-        if self.tipo_conta == "corrente" and self.saldo_atual < 0:
-            return abs(self.saldo_atual)
-        return 0.0
-
     def verificar_gatilhos(self):
         """ função para verificar os gatilhos de alerta relacionados ao saldo da conta, como o limite de segurança e o uso do cheque especial. 
         A função percorre as transações da conta, calcula o saldo atual e verifica se o saldo está abaixo do limite de segurança estipulado pelo usuário 
@@ -165,7 +181,6 @@ class Conta(Base):
         except Exception as e:
             print (f"Não foi possível verificar os gatilho: {e}")
             raise e
-        
 
     def add_conta(self):
         db = SessionLocal()
@@ -216,3 +231,133 @@ class Conta(Base):
         
         finally:
             db.close() # fecha a conexão com o BD
+#endregion
+
+"""############################### CONTA CORRENTE ######################################################"""
+class Conta_Corrente(Conta):
+#region TABELA E COLUNAS
+    __mapper_args__ = {
+        'polymorphic_identity': 'corrente' # Valor que será gravado em tipo_conta
+    }
+#endregion
+
+#region INIT
+    def __init__(self, 
+                 nome_conta, 
+                 id_usuario, 
+                 tipo_conta="corrente", 
+                 saldo_inicial=0.0,      
+                 subtipo_conta=None,
+                 cheque_especial=0.0, 
+                 vencimento=None, 
+                 ativa=True, 
+                 id_indice=None, 
+                 tipo_instituicao="banco", 
+                 ignorar_patrimonio=False, 
+                 cor_perfil=None, 
+                 limite_seguranca=None, 
+                 banco=None):
+
+        super().__init__(nome_conta, 
+                         id_usuario, 
+                         tipo_conta, 
+                         saldo_inicial, 
+                         subtipo_conta,
+                         cheque_especial, 
+                         vencimento, 
+                         0.0,             
+                         None,            
+                         None,            
+                         ativa, 
+                         id_indice, 
+                         tipo_instituicao, 
+                         ignorar_patrimonio, 
+                         cor_perfil, 
+                         limite_seguranca, 
+                         banco)
+        
+        self.cheque_especial = cheque_especial
+        self.vencimento = vencimento
+#endregion
+
+#region PROPRIEDADES DA CONTA CORRENTE
+    @property
+    def limite_disponivel(self):
+        # propriedade para calcular o limite disponível. Se o saldo estiver negativo, a função retorna a soma do valor negativo do saldo com o valor do cheque especial, indicando o limite disponível.
+
+        # Se o saldo for negativo, o cheque especial está sendo usado
+        if self.saldo_atual < 0:
+            return self.cheque_especial + self.saldo_atual
+        return self.cheque_especial
+
+    @property
+    def uso_cheque_especial(self):
+        # property que nos dirá o gasto com o cheque especial do usuário, pegamos o saldo atual e se estiver negativo, retornamos o valor absoluto e com isso sabemos o uso do Cheque especial.
+
+        if self.saldo_atual < 0:
+            return abs(self.saldo_atual)
+        return 0.0
+
+    @property
+    def saldo_total_disponivel(self):
+        # Essa propriedade soma o dinheiro real com o limite do banco, nos dando o valor total disponível naquela conta para o usuário.
+
+        return self.saldo_atual + self.cheque_especial
+#endregion
+
+"""############################### CONTA CARTÂO ########################################################"""
+class Conta_Cartao(Conta):
+#region TABELA E COLUNAS    
+    __mapper_args__ = {
+        'polymorphic_identity': 'cartao' # Valor que será gravado em tipo_conta
+    }
+#endregion
+
+#region INIT   
+    def __init__(self, 
+                 nome_conta, 
+                 id_usuario, 
+                 tipo_conta="cartao",
+                 saldo_inicial=0.0,
+                 subtipo_conta="cartao",
+                 limite=0.0,
+                 vencimento_cartao=None,
+                 fechamento_cartao=None,
+                 ativa=True, 
+                 id_indice=None,
+                 tipo_instituicao="banco", 
+                 ignorar_patrimonio=False, 
+                 cor_perfil=None, 
+                 limite_seguranca=None, 
+                 banco=None):
+
+        super().__init__(nome_conta, 
+                         id_usuario, 
+                         tipo_conta, 
+                         saldo_inicial, 
+                         subtipo_conta,
+                         0.0,
+                         None,
+                         limite,
+                         vencimento_cartao,
+                         fechamento_cartao,
+                         ativa, 
+                         id_indice, 
+                         tipo_instituicao, 
+                         ignorar_patrimonio, 
+                         cor_perfil, 
+                         limite_seguranca, 
+                         banco)
+        
+        self.limite = limite
+        self.vencimento_cartao = vencimento_cartao
+        self.fechamento_cartao = fechamento_cartao
+#endregion
+
+#region PROPRIEDADES DA CONTA CARTÃO
+
+    @property
+    def fatura_atual_cartao(self):
+        # essa property vai ser responsável por passar o valor da fatura atual, calculando o valor acumulado de gastos que ainda não foram quitados
+        return sum(t.valor for t in self.transacoes_pendentes)
+#endregion

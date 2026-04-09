@@ -4,10 +4,11 @@ from database.config import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
-# Definindo a classe transações.
 
+"""############################### TRANSAÇÕES ########################################################"""
 class Transacao(Base):
 
+#region TABELA E COLUNAS
     __tablename__ = "transacoes" # criando a tabela "transacoes"
     
     # definindo as colunas da tabela:
@@ -43,8 +44,9 @@ class Transacao(Base):
     conta = relationship("Conta", back_populates="transacoes")  # relacionamento com a tabela de contas
     usuario = relationship("Usuario", back_populates="transacoes") # relacionamento com a tabela de usuários
     ativo = relationship("Ativo", back_populates="transacoes") # relacionamento com a tabela de ativos, permitindo acessar o ativo associado a uma transação através do atributo 'ativo' do objeto Transacao
+#endregion    
     
-    
+#region INIT    
     def __init__(self,
                  valor: float, 
                  tipo: str, 
@@ -95,7 +97,9 @@ class Transacao(Base):
             self.data = data
         self.descricao = descricao
         self.local = local
-    
+#endregion
+
+#region MÉTODOS DE BANCO DE DADOS    
     def add_transacao(self):
         
         db = SessionLocal() # Estabelece a conexão com o banco de Dados.
@@ -149,4 +153,4 @@ class Transacao(Base):
 
         finally:
             db.close() # fecha a conexão com o BD
-
+#endregion
