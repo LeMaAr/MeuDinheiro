@@ -1,4 +1,3 @@
-
 from database.config import engine, Base  
 from classes.usuarios import Usuario
 from classes.familias import Familia
@@ -9,6 +8,7 @@ from classes.regras import RegraTag
 from classes.indices import IndiceFinanceiro 
 from classes.categorias import Categoria, Subcategoria
 from classes.ativos import Ativo 
+from classes.convites_familia import ConviteFamilia
 
 def criar_banco():
     print("Iniciando a criação do banco de dados MeuDinheiro...")

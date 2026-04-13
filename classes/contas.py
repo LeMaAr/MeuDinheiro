@@ -26,9 +26,13 @@ class SubtipoConta(enum.Enum):
 
 """############################### CONTA (BASE) ########################################################"""
 class Conta(Base):
+    """ A classe Conta representa a estrutura básica de uma conta financeira, com atributos comuns a todos os tipos de conta, como nome da conta, saldo inicial, tipo de conta, entre outros.
+    A classe Conta é a classe base para as classes Conta_Corrente e Conta_Cartao, que herdam os atributos e métodos da classe Conta e adicionam funcionalidades específicas para cada tipo de conta."""
+
 #region TABELA E COLUNAS
     __tablename__ = "contas" #criando a tabela conta.
 
+    # CAMPOS DA TABELA
     id_conta = Column(Integer, primary_key=True, autoincrement=True) # coluna id conta
     saldo_inicial = Column(Float, default=0.0) # coluna de saldo inicial
     nome_conta = Column(String) # Coluna nome da conta
@@ -53,15 +57,17 @@ class Conta(Base):
     fechamento_cartao = Column(Integer, nullable=True) #  Dia do mês que em que a fatura do cartão é fechada.
 
     # CHAVES ESTRANGEIRAS
-    id_familia = Column(Integer, ForeignKey("familias.id_familia"), nullable=True) # coluna de id da família, que permitirá associar a conta a uma família. Pode ser nula para contas que não sejam associadas a uma família.
+    id_familia = Column(Integer, ForeignKey("familias.id_familia", ondelete="SET NULL"), nullable=True) # coluna de id da família, que permitirá associar a conta a uma família. Pode ser nula para contas que não sejam associadas a uma família.
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario")) # recuperando a id de usuário da tabela usuários
+    id_indice = Column(Integer, ForeignKey("indices.id_indice")) # id de indice financeiro
 
     # RELACIONAMENTOS COM OUTRAS TABELAS  
-    transacoes = relationship("Transacao", back_populates="conta") # relacionamento com a tabela de transações, permitindo acessar as transações associadas à conta através do atributo 'transacoes' do objeto Conta, e acessar a conta associada a uma transação através do atributo 'conta' do objeto Transacao.
-    usuario = relationship("Usuario", back_populates="contas") # relacionamento com a tabela de usuários        
-    indice = relationship("IndiceFinanceiro", back_populates="contas") # relacionamento com a tabela de índices financeiros, permitindo acessar o índice financeiro associado à conta através do atributo 'indice' do objeto Conta, e acessar as contas associadas a um índice financeiro através do atributo 'contas' do objeto IndiceFinanceiro.
+    transacoes = relationship("Transacao", back_populates="conta") # relacionamento com a tabela de transações.                  # CONFERIDO
+    usuario = relationship("Usuario", back_populates="contas") # relacionamento com a tabela de usuários                         # CONFERIDO       
+    indice = relationship("IndiceFinanceiro", back_populates="contas") # relacionamento com a tabela de índices financeiros.     # CONFERIDO
+    familia = relationship("Familia", back_populates="contas") # relacionamento com a tabela de famílias.                        # CONFERIDO
 
-    # atalho para reconhecer o valor das transações pendentes
+    # ATALHO PARA AS TRANSACOES PENDENTES
     transacoes_pendentes = relationship(
         "Transacao", 
         primaryjoin="and_(Conta.id_conta == Transacao.id_conta, "
@@ -70,7 +76,7 @@ class Conta(Base):
         viewonly=True
     )
 
-    # configuração para Single Table Inheritance (STI), permitindo que as subclasses de Conta sejam armazenadas na mesma tabela 'contas' e diferenciadas pelo campo 'tipo_conta'.
+    # CONFIGURAÇÃO PARA STI (Single Table Inheritance)
     __mapper_args__ = {
         'polymorphic_on': tipo_conta, # campo usado para diferenciar os tipos de conta na tabela, permitindo que o SQLAlchemy saiba qual classe usar para instanciar os objetos ao recuperar os dados do banco.
         'polymorphic_identity': 'conta_base' # valor do campo tipo_conta que identifica os registros que correspondem à classe base Conta, ou seja, registros com tipo_conta igual a 'conta' serão instanciados como objetos da classe Conta, enquanto registros com tipo_conta igual a 'corrente' ou 'cartao' serão instanciados como objetos das classes Conta_Corrente e Conta_Cartao, respectivamente.
@@ -117,8 +123,10 @@ class Conta(Base):
         self.banco = banco 
 #endregion
 
-#region FUNÇÕES DE CONTA
+#region PROPRIEDADES E MÉTODOS DE CONTA
 
+#region PROPRIEDADES E MÉTODOS ESPECÍFICOS:
+    # PROPRIEDADES:
     @property
     def saldo_atual(self):
         """ propriedade para calcular o saldo atual da conta, levando em consideração o saldo inicial e as transações associadas à conta. 
@@ -149,6 +157,7 @@ class Conta(Base):
 
         return total
     
+    # MÉTODOS ESPECÍFICOS:
     def verificar_gatilhos(self):
         """ função para verificar os gatilhos de alerta relacionados ao saldo da conta, como o limite de segurança e o uso do cheque especial. 
         A função percorre as transações da conta, calcula o saldo atual e verifica se o saldo está abaixo do limite de segurança estipulado pelo usuário 
@@ -181,7 +190,9 @@ class Conta(Base):
         except Exception as e:
             print (f"Não foi possível verificar os gatilho: {e}")
             raise e
+#endregion
 
+#region MÉTODOS DE BANCO DE DADOS:
     def add_conta(self):
         db = SessionLocal()
         
@@ -233,8 +244,12 @@ class Conta(Base):
             db.close() # fecha a conexão com o BD
 #endregion
 
+#endregion
+
 """############################### CONTA CORRENTE ######################################################"""
 class Conta_Corrente(Conta):
+    """ A classe Conta_Corrente representa uma conta corrente, que é um tipo específico de conta financeira. Ela possui atributos exclusivos como cheque especial e vencimento do cheque especial"""
+
 #region TABELA E COLUNAS
     __mapper_args__ = {
         'polymorphic_identity': 'corrente' # Valor que será gravado em tipo_conta
@@ -280,12 +295,12 @@ class Conta_Corrente(Conta):
         self.vencimento = vencimento
 #endregion
 
-#region PROPRIEDADES DA CONTA CORRENTE
+#region PROPRIEDADES E MÉTODOS DA CONTA CORRENTE
     @property
     def limite_disponivel(self):
         # propriedade para calcular o limite disponível. Se o saldo estiver negativo, a função retorna a soma do valor negativo do saldo com o valor do cheque especial, indicando o limite disponível.
-
         # Se o saldo for negativo, o cheque especial está sendo usado
+
         if self.saldo_atual < 0:
             return self.cheque_especial + self.saldo_atual
         return self.cheque_especial
@@ -307,6 +322,8 @@ class Conta_Corrente(Conta):
 
 """############################### CONTA CARTÂO ########################################################"""
 class Conta_Cartao(Conta):
+    """ A classe Conta_Cartao representa uma conta de cartão de crédito, que é um tipo específico de conta financeira. Ela possui atributos exclusivos como limite do cartão, vencimento da fatura e fechamento da fatura."""
+
 #region TABELA E COLUNAS    
     __mapper_args__ = {
         'polymorphic_identity': 'cartao' # Valor que será gravado em tipo_conta
@@ -354,10 +371,18 @@ class Conta_Cartao(Conta):
         self.fechamento_cartao = fechamento_cartao
 #endregion
 
-#region PROPRIEDADES DA CONTA CARTÃO
-
+#region PROPRIEDADES E MÉTODOS DA CONTA CARTÃO
     @property
     def fatura_atual_cartao(self):
         # essa property vai ser responsável por passar o valor da fatura atual, calculando o valor acumulado de gastos que ainda não foram quitados
+        
         return sum(t.valor for t in self.transacoes_pendentes)
+    
+    @property
+    def saldo_disponivel_cartao(self):
+        # Propriedade para calcular o saldo disponível do cartão, subtraindo o valor da fatura atual do limite do cartão.
+        # O resultado é o saldo disponível do cartão, que pode ser usado para exibir ao usuário ou para outras funcionalidades do sistema.
+        
+        return self.limite - self.fatura_atual_cartao
+
 #endregion

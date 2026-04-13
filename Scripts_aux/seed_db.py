@@ -1,76 +1,177 @@
-from classes.transacoes import Transacao 
-from classes.regras import RegraTag
-from classes.contas import Conta      
-from datetime import date, timedelta
+import random
+from faker import Faker
+from database.config import SessionLocal
 from classes.usuarios import Usuario
 from classes.familias import Familia
-from classes.contas import ContaCorrente, Cartao
+from classes.convites_familia import ConviteFamilia
+from classes.contas import Conta
+from classes.transacoes import Transacao
+from classes.categorias import Categoria, Subcategoria, gerar_cor
+from classes.regras import RegraTag
+from classes.ativos import Ativo
+from classes.indices import IndiceFinanceiro
 from classes.metas import Meta
+from datetime import date, timedelta
 
-### SCRIPT PARA TESTAR SE O BANCO DE DADOS ESTÁ FUNCIONANDO ###
+fake = Faker('pt_BR')
 
-def popular_banco():
-    print("Populando o banco de dados com dados de teste...")
+def gerar_massa_de_dados(qtd_familias = 4,
+                         membros_por_familia = 5
+                         ):
+    
+    db = SessionLocal()
+    senha_teste = "senha123"
 
     try:
-        # 1. Criando a Família
-        # O id_admin será preenchido após criarmos o usuário
-        familia_araujo = Familia(nome="Família Araujo", id_admin=1)
-        familia_araujo.add_familia()
+        print(f"Iniciando a geração de {qtd_familias} famílias...")
 
-        # 2. Criando o Usuário (Leandro)
-        # Localizado em São José dos Campos
-        leandro = Usuario(
-            nome="Leandro Marcondes Araujo", 
-            email="leandro@email.com", 
-            senha_plana="senha123", 
-            id_familia=1
-        )
-        leandro.add_usuario()
-
-        # 3. Criando uma Conta Corrente com Cheque Especial
-        conta_nubank = ContaCorrente(
-            nome_conta="Nubank Principal",
-            saldo_inicial=5000.0,
-            id_usuario=1,
-            banco="Nubank",
-            cheque_especial=1000.0,
-            vencimento=date(2026, 12, 31)
-        )
-        conta_nubank.add_conta()
+        #region --- Famílias e Usuários ---
         
-        # No seed_db.py, após o add_conta()
-        from sqlalchemy.orm import selectinload
-        from database.config import SessionLocal
+        # criando primeiro as famílias para termos integridade referencial.
+        for _ in range(qtd_familias):
+            nova_familia = Familia(nome_familia=f" Família {fake.last_name()}")
+            nova_familia.add_familia()
 
-        # Abrimos uma sessão rápida apenas para carregar os dados
-        db = SessionLocal()
-        # Buscamos a conta novamente, mas forçando o carregamento das transações
-        conta_nubank = db.query(ContaCorrente).options(selectinload(ContaCorrente.transacoes)).filter_by(id_conta=1).first()
+            # criando os usuários que farão parte das famílias criadas
+            usuarios_da_familia = []
+
+            for i in range(membros_por_familia):
+               
+                novo_usuario = Usuario(
+                    nome = fake.name(),
+                    email = fake.email(),
+                    senha_plana = senha_teste,
+                    id_familia = nova_familia.id_familia,
+                    admin_familia = (i == 0)
+                )
+                novo_usuario.add_usuario()
+                usuarios_da_familia.append(novo_usuario)
+        #endregion
+
+            #region --- Categorias & Subcategorias---
+            admin = usuarios_da_familia[0]
+
+            cats_config = {
+                "Alimentação": ["Mercado", "Restaurante", "Ifood"],
+                "Transporte": ["Combustível", "Estacionamento", "Manutenção", "Seguro", "Ônibus", "Uber"],
+                "Lazer": ["Cinema", "Viagem", "Streaming", "Games"],
+                "Saúde": ["Convênio Médico", "Academia", "Farmácia"],
+                "Moradia": ["Aluguel", "Condomínio", "Energia", "Internet", "Manutenção", "Água"],
+                "Educação": ["Livros", "Escola das Crianças", "Material Escolar"]
+            }
+
+            # adicionando categorias
+            for nome_cat, sub_nomes in cats_config.items():
+                nova_cat = Categoria( nome = nome_cat,
+                                     cor_hex = gerar_cor(),
+                                     id_usuario = admin.id_usuario
+                                     )
+                nova_cat.add_categoria()
+
+                # adicionando subcategorias
+                for nome_sub in sub_nomes:
+                    nova_sub = Subcategoria(nome = nome_sub,
+                                            id_categoria = nova_cat.id_categoria,
+                                            id_usuario = admin.id_usuario
+                                            )
+                    nova_sub.add_subcategoria()
+            #endregion
+
+            #region --- Contas ---
+            for user in usuarios_da_familia:
+
+                tipos_possiveis = ["corrente",
+                                "cartao",
+                                "poupanca",
+                                "dinheiro",
+                                "investimento",
+                                "salario",
+                                "outro"
+                                ]
+                tipo_escolhido = random.choice(tipos_possiveis)
+
+                bancos_br = ["Itaú", "Bradesco", "Santander", "Nubank", "Inter", "Caixa", "Banco do Brasil", "C6"]
+
+                parametros_conta = {
+                    "nome_conta" : random.choice(bancos_br),
+                    "id_usuario" : user.id_usuario,
+                    "tipo_conta" : tipo_escolhido,
+                    "saldo_inicial" : random.uniform(500, 10000)
+                }
+
+                if tipo_escolhido == "cartao":
+                    parametros_conta["limite"] = random.uniform (1000, 20000)
+                    parametros_conta["vencimento_cartao"] = random.randint(1,28)
+                    parametros_conta["fechamento_cartao"] = random.randint(1,28)
+
+                elif tipo_escolhido == "corrente":
+                    parametros_conta["cheque_especial"] = random.uniform(500,5000)
+                    parametros_conta["vencimento"] = random.randint(1,28)
+
+                elif tipo_escolhido == "investimento":
+                    parametros_conta["ignorar_patrimonio"] = False
+
+
+                nova_conta = Conta(**parametros_conta)
+                nova_conta.add_conta()
+                #endregion
+
+                #region --- Transações ---               
+                sub_ids = [s.id_subcategoria for s in db.query(Subcategoria).filter_by(id_usuario=admin.id_usuario).all()]
+
+                # mensagem de aviso:
+                print(f"📊 Gerando 1 ano de histórico para {user.nome}...")
+
+                # adicionando um salário mensal
+                for mes in range(12):
+                    salario =  Transacao(
+                        valor= random.uniform (4000, 18000),
+                        tipo = "receita",
+                        data = date.today() - timedelta(days=30*mes + random.randint(0,2)),
+                        descricao = "Recebimento do Salário",
+                        id_usuario = user.id_usuario,
+                        id_conta = nova_conta.id_conta
+                    )
+                    salario.add_transacao()
+
+                    # adiocionando despesas variadas (20 a 25 por mês)
+                    for _ in range(random.randint(20,25)):
+                        data_t = date.today() - timedelta(days = random.randint(0, 365))
+
+                        t = Transacao(
+                            valor = random.uniform (10,500),
+                            tipo = "despesa",
+                            data = data_t,
+                            descricao = fake.sentence(nb_words=3),
+                            id_usuario= user.id_usuario,
+                            id_conta = nova_conta.id_conta,
+                            id_subcategoria = random.choice(sub_ids) if sub_ids else None
+                        )
+                        t.add_transacao()
+
+            print(f"✅ Família {nova_familia.nome_familia} populada!")
+
+        print("\n🏆 Sucesso! O banco 'MeuDinheiro' está cheio de dados reais para análise.")
+
+                #endregion
+
+
+
+    
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+        raise e
+    
+    finally:
         db.close()
 
-        # 4. Criando uma Meta de Economia (Data Science Portfolio)
-        # Prazo de um ano a partir de hoje
-        prazo = date.today() + timedelta(days=365)
-        meta_estudos = Meta(
-            nome_meta="Curso Avançado de Data Science",
-            valor_alvo=2000.0,
-            valor_poupado=500.0,
-            data_inicio=date.today(),
-            prazo_final=prazo,
-            id_usuario=1,
-            id_familia=1
-        )
-        meta_estudos.add_meta()
-
-        print("\n--- Teste de Lógica ---")
-        print(f"Usuário: {leandro.nome}")
-        print(f"Saldo Disponível (c/ limite): R$ {conta_nubank.saldo_total_disponivel}")
-        print(f"Status da Meta: {meta_estudos.status_meta}")
-        print(f"Sugestão para guardar este mês: R$ {meta_estudos.valor_mensal_sugerido:.2f}")
-
-    except Exception as e:
-        print(f"Erro ao popular banco: {e}")
-
 if __name__ == "__main__":
-    popular_banco()
+    gerar_massa_de_dados()
+
+
+
+
+
+
+                
+

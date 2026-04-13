@@ -2,14 +2,17 @@ from argon2 import PasswordHasher
 from database.config  import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
+from database.utils.constants import CATEGORIAS_DESPESAS, CATEGORIAS_RECEITA, CATEGORIAS_PATRIMONIO
+from classes.categorias import Categoria, Subcategoria, gerar_cor
 import datetime
 
+"""############################### USUÁRIOS ########################################################"""
+class Usuario(Base): 
 
-# Criando a classe usuário:
-class Usuario(Base):
-    
+#region TABELA E RELACIONAMENTOS:
     __tablename__= "usuarios" # criando a tabela usuarios
     
+    # CAMPOS DA TABELA:
     id_usuario = Column(Integer, primary_key=True, autoincrement=True) # id única do usuário, o primary key impede que hajam duas chaves iguais e o autoincrement adiciona 1 a cada novo usuário
     nome = Column(String) # nome do usuário
     email = Column(String, unique=True, nullable=False) # email do usuário
@@ -17,20 +20,26 @@ class Usuario(Base):
     renda_mensal = Column(Float, nullable=True) # renda mensal do usuário, pode ser nula caso o usuário não queira informar
     nascimento = Column(Date, nullable=True) # data de nascimento do usuário, pode ser nula caso o usuário não queira informar
     objetivo_reserva = Column(Float, nullable=True) # valor que o usuário estipula como objetivo para sua reserva de emergência, pode ser nulo caso o usuário não queira informar
-    id_familia = Column(Integer, ForeignKey("familias.id_familia"), nullable=True) # id da família, se houver. Cria um relationship com a coluna id_familia da tabela famílias
     data_criacao =  Column(DateTime, default=datetime.datetime.now, nullable=False) # data de criação do usuário, preenchida automaticamente com a data e hora atual quando o usuário é criado
     preferencia_moeda = Column(String(3),nullable=False, default="BRL") # moeda preferida do usuário, preenchida automaticamente com "BRL" caso o usuário não informe uma preferência
     admin_familia = Column(Boolean, nullable=False, default=False) # campo booleano para indicar se o usuário é admin da família.
     
-    # relacionamentos com outras tabelas:
-    familia_vinculada = relationship("Familia", back_populates="usuarios", foreign_keys=[id_familia])
-    regras = relationship("RegraTag", back_populates="usuario")
-    categorias = relationship("Categoria", back_populates="usuario")
-    subcategorias = relationship("Subcategoria", back_populates="usuario")
-    transacoes = relationship("Transacao", back_populates="usuario", cascade="all, delete-orphan")
-    contas = relationship("Conta", back_populates="usuario", cascade="all, delete-orphan")
-    ativos = relationship("Ativo", back_populates="usuario", cascade="all, delete-orphan")
-    
+    # CHAVE ESTRANGEIRA:
+    id_familia = Column(Integer, ForeignKey("familias.id_familia", ondelete="SET NULL"), nullable=True) # id da família, se houver. Cria um relationship com a coluna id_familia da tabela famílias
+
+    # RELACIONAMENTOS COM OUTRAS TABELAS:
+    familia = relationship("Familia", back_populates="membros", foreign_keys=[id_familia])               # CONFERIDO 
+    regras_tag = relationship("RegraTag", back_populates="usuario")                                      # CONFERIDO
+    categorias = relationship("Categoria", back_populates="usuario")                                     # CONFERIDO
+    subcategorias = relationship("Subcategoria", back_populates="usuario")                               # CONFERIDO
+    transacoes = relationship("Transacao", back_populates="usuario", cascade="all, delete-orphan")       # CONFERIDO
+    contas = relationship("Conta", back_populates="usuario", cascade="all, delete-orphan")               # CONFERIDO
+    ativos = relationship("Ativo", back_populates="usuario", cascade="all, delete-orphan")               # CONFERIDO 
+    metas = relationship("Meta", back_populates= "usuario", cascade="all, delete-orphan")                # CONFERIDO
+
+#endregion    
+
+#region INIT:
     def __init__(self, 
                  nome, 
                  email, 
@@ -52,7 +61,9 @@ class Usuario(Base):
         self.nascimento = nascimento
         self.objetivo_reserva = objetivo_reserva
         self.definir_senha(senha_plana) # chama a função definir_senha para gerar o hash da senha e armazenar no campo senha_hash
+#endregion
 
+#region MÉTODOS:
     @property
     def saldo_total(self):
         """Soma o saldo de todas as contas ativas vinculadas ao usuário."""
@@ -102,6 +113,38 @@ class Usuario(Base):
             raise e
         finally:
             db.close()
+
+    def inicializar_novo_usuario(self, session):
+        """ Essa função adicionará categorias e subcategorias padrão ao usuário assim que um novo registro for criado."""
+        mapa_padrao = {
+            "despesa": CATEGORIAS_DESPESAS,
+            "receita": CATEGORIAS_RECEITA,
+            "patrimonio": CATEGORIAS_PATRIMONIO
+        }
+
+        # aqui pegamos os itens da variável mapa padrão que acabamos de criar (com os dados do dict criado em constants) e iteramos:
+        for tipo, categorias in mapa_padrao.items():
+            # pegamos os valores de mapa padrão e iteramos:
+            for nome_cat, lista_subs in categorias.items():
+                nova_cat = Categoria(
+                    nome=nome_cat, # associamos o nome das chaves dos dicionarios que estão em constants ao nome da categoria
+                    tipo=tipo,
+                    id_usuario=self.id_usuario,
+                    cor_hex= gerar_cor()
+                )
+                session.add(nova_cat)
+                session.flush()
+
+                for nome_sub in lista_subs:
+                    nova_sub = Subcategoria(
+                        nome=nome_sub,
+                        tipo=tipo,
+                        id_categoria=nova_cat.id_categoria,
+                        id_usuario=self.id_usuario
+                    )
+                    session.add(nova_sub)
+        
+        session.commit()
 
     def add_usuario(self):
         db = SessionLocal() # Estabelece a conexão com o banco de Dados.
@@ -153,3 +196,4 @@ class Usuario(Base):
 
         finally:
             db.close() # fecha a conexão com o BD
+#endregion

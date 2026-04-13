@@ -1,29 +1,74 @@
-from sqlalchemy import Column, Integer, Float, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, Date, ForeignKey, CheckConstraint
+from sqlalchemy.orm import relationship
 from database.config import Base, SessionLocal
 from datetime import date
 
+"""############################### METAS ########################################################"""
 class Meta(Base):
-
+    """ Classe para representar as metas financeiras dos usuários. Cada meta tem um nome, um valor alvo, um valor de aporte inicial, uma data de início, um prazo final, e está associada OU a um usuário Ou a uma família.
+      A classe também inclui propriedades para calcular o progresso da meta, o valor mensal sugerido para alcançar a meta dentro do prazo, e o status da meta em relação ao progresso esperado."""
     __tablename__ = "metas"
-
+    
+#region TABELAS E RELACIONAMENTOS:
+    # CAMPOS DA TABELA:
     id_meta = Column(Integer, primary_key=True, autoincrement=True)
     nome_meta = Column(String, nullable=False)
     valor_alvo = Column(Float, nullable=False)
-    valor_poupado = Column(Float, default=0.0)
+    aporte_inicial = Column(Float, nullable=False, default=0.0)
     data_inicio = Column(Date, default=date.today)
     prazo_final = Column(Date)
+
+    # CHAVES ESTRANGEIRAS:
     id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"))
     id_familia = Column(Integer, ForeignKey("familias.id_familia"))
 
-    def __init__(self, nome_meta, valor_alvo, valor_poupado, data_inicio: date, prazo_final: date, id_usuario, id_familia):
+    # RELACIONAMENTOS:
+    transacoes = relationship("Transacao", back_populates="meta") # relacionamento com a tabela de transações.  # CONFERIDO
+    usuario = relationship("Usuario", back_populates="metas") # relacionamento com a tabela de usuário.         # CONFERIDO
+    familia = relationship("Familia", back_populates="metas") # relacionamento com a tabela de família.         # CONFERIDO
 
+    # RESTRIÇÃO PARA IMPEDIR QUE NENHUMA ENTRADA FIQUE SEM UM USUÁRIO OU UMA FAMÍLIA(EXCLUDENTEMENTE)
+    __table_args__ = (
+        CheckConstraint(
+            '(id_usuario IS NOT NULL AND id_familia IS NULL) OR (id_usuario IS NULL AND id_familia IS NOT NULL)',
+            name='check_proprietario_meta'
+        ),
+    )
+#endregion
+
+#region INIT:
+    def __init__(self, 
+                 nome_meta, 
+                 valor_alvo, 
+                 data_inicio: date, 
+                 prazo_final: date, 
+                 id_usuario = None, 
+                 id_familia = None,                  
+                 aporte_inicial = 0.0
+                 ):
+
+        if id_usuario and id_familia:
+            raise ValueError("Uma meta não pode pertencer a um usuário e a uma família simultaneamente.")
+        if not id_usuario and not id_familia:
+            raise ValueError("A meta deve pertencer a pelo menos um usuário ou a uma família.")
+        
         self.nome_meta = nome_meta
         self.valor_alvo = valor_alvo
-        self.valor_poupado = valor_poupado
+        self.aporte_inicial = aporte_inicial
         self.data_inicio = data_inicio
         self.prazo_final = prazo_final
         self.id_usuario = id_usuario
         self.id_familia = id_familia
+#endregion
+
+#region PROPRIEDADES E MÉTODOS DE METAS:
+
+#region PROPRIEDADES:
+    @property
+    def valor_poupado(self):
+        # calcula o valor poupado somando o aporte inicial com o valor de todas as transações do tipo receita associadas à meta
+        
+        return self.aporte_inicial + sum(t.valor for t in self.transacoes if t.tipo == "receita")
 
     @property
     def progresso(self):
@@ -45,13 +90,11 @@ class Meta(Base):
             return 0.0
 
         # formula para encontrar quantos meses faltam para a conclusão da meta    
-        meses_restantes = (self.prazo_final.year - hoje.year) * 12 + (self.prazo_final.month - hoje.month)
-            
-        if meses_restantes <= 0:
-            return valor_restante
-    
-        # formula para encontrar quanto economizar por mês para concluir a meta.
-        return valor_restante / meses_restantes
+        meses_diff = (self.prazo_final.year - hoje.year) * 12 + (self.prazo_final.month - hoje.month)
+
+        meses_para_calculo = max(1, meses_diff)
+
+        return round(valor_restante / meses_para_calculo, 2)
 
     @property
     def status_meta(self):
@@ -79,7 +122,9 @@ class Meta(Base):
             return "Você está abaixo da meta. "
         else:
             return "Você está na meta."
+#endregion
 
+#region MÉTODOS DE BANCO DE DADOS:
     def add_meta(self):
         db = SessionLocal()
         
@@ -129,3 +174,5 @@ class Meta(Base):
         
         finally:
             db.close() # fecha a conexão com o BD
+#endregion
+#endregion
