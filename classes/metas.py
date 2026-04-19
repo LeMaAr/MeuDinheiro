@@ -1,10 +1,11 @@
 from sqlalchemy import Column, Integer, Float, String, Date, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
-from database.config import Base, SessionLocal
+from database.config import Base 
+from database.mixin import CRUDMixin
 from datetime import date
 
 """############################### METAS ########################################################"""
-class Meta(Base):
+class Meta(Base, CRUDMixin):
     """ Classe para representar as metas financeiras dos usuários. Cada meta tem um nome, um valor alvo, um valor de aporte inicial, uma data de início, um prazo final, e está associada OU a um usuário Ou a uma família.
       A classe também inclui propriedades para calcular o progresso da meta, o valor mensal sugerido para alcançar a meta dentro do prazo, e o status da meta em relação ao progresso esperado."""
     __tablename__ = "metas"
@@ -56,19 +57,27 @@ class Meta(Base):
         self.valor_alvo = valor_alvo
         self.aporte_inicial = aporte_inicial
         self.data_inicio = data_inicio
+
         self.prazo_final = prazo_final
+        if prazo_final <= data_inicio:
+            raise ValueError("O prazo final deve ser posterior à data de início.")
+
         self.id_usuario = id_usuario
         self.id_familia = id_familia
 #endregion
 
 #region PROPRIEDADES E MÉTODOS DE METAS:
-
-#region PROPRIEDADES:
     @property
     def valor_poupado(self):
-        # calcula o valor poupado somando o aporte inicial com o valor de todas as transações do tipo receita associadas à meta
+        """
+        Calcula o total acumulado na meta.
+        Considera o aporte inicial + depósitos (receitas/transferências) 
+        - retiradas (despesas).
+        """
+        entradas = sum(t.valor for t in self.transacoes if t.tipo in ["receita", "transferencia", "dividendo"])
+        saidas = sum(t.valor for t in self.transacoes if t.tipo == "despesa")
         
-        return self.aporte_inicial + sum(t.valor for t in self.transacoes if t.tipo == "receita")
+        return self.aporte_inicial + (entradas - saidas)
 
     @property
     def progresso(self):
@@ -122,57 +131,4 @@ class Meta(Base):
             return "Você está abaixo da meta. "
         else:
             return "Você está na meta."
-#endregion
-
-#region MÉTODOS DE BANCO DE DADOS:
-    def add_meta(self):
-        db = SessionLocal()
-        
-        try:
-            db.add(self) # adiciona a meta ao bd
-            db.commit() # comita a mudança
-            db.refresh(self) # atualiza o bd
-            print (f"Sua meta {self.id_meta} foi adicionada com sucesso!") # imprime uma mensagem de conclusão.
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao adicionar a meta{self.nome_meta}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def mod_meta(self):
-        db =  SessionLocal()
-
-        try:
-            db.merge(self) # mescla o estado atual do objeto com seu equivalente no BD
-            db.commit() # salva a alteração no bd
-            db.refresh(self) # atualiza o bd com a alteração
-            print (f"Meta {self.nome_meta} alterada com sucesso.") # imprime a msg de conclusão
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao modificar sua meta: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def del_meta(self):
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-
-        try:
-            db.delete(self) # deleta o usuário do DB
-            db.commit() # faz a alteração permanentemente
-            print(f"Meta {self.id_meta} foi excluída com sucesso!") # imprime uma mensagem de conclusão.
-
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao excluir a meta {self.nome_meta}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-        
-        finally:
-            db.close() # fecha a conexão com o BD
-#endregion
 #endregion

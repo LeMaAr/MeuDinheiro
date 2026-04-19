@@ -2,12 +2,14 @@ from argon2 import PasswordHasher
 from database.config  import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-from database.utils.constants import CATEGORIAS_DESPESAS, CATEGORIAS_RECEITA, CATEGORIAS_PATRIMONIO
-from classes.categorias import Categoria, Subcategoria, gerar_cor
+from utils.constants import CATEGORIAS_DESPESAS, CATEGORIAS_RECEITA, CATEGORIAS_PATRIMONIO
+from classes.transacoes import TipoTransacao
+from database.mixin import CRUDMixin
+from utils.tools import gerar_cor
 import datetime
 
 """############################### USUÁRIOS ########################################################"""
-class Usuario(Base): 
+class Usuario(Base, CRUDMixin): 
 
 #region TABELA E RELACIONAMENTOS:
     __tablename__= "usuarios" # criando a tabela usuarios
@@ -92,108 +94,51 @@ class Usuario(Base):
 
     def promover_a_admin(self):
     # Transforma o usuário atual em um administrador da sua família.
-
-        from database import SessionLocal # Ajuste conforme seu projeto
         
-        db = SessionLocal()
         try:
             # 1. Ativamos a flag de admin no objeto
             self.admin_familia = True
             
             # 2. Persistimos a mudança no banco
-            db.merge(self)
-            db.commit()
-            db.refresh(self)
-            
+            self.modificar()            
             print(f"Usuário {self.nome} agora é administrador da família {self.id_familia}.")
 
         except Exception as e:
-            db.rollback()
             print(f"Erro ao promover usuário a admin: {e}")
             raise e
-        finally:
-            db.close()
-
+        
     def inicializar_novo_usuario(self, session):
         """ Essa função adicionará categorias e subcategorias padrão ao usuário assim que um novo registro for criado."""
+
+        # importamos as Classes Categoria e Subcategoria aqui para evitar erro de importação circular.
+        from classes.categorias import Categoria, Subcategoria 
+        
         mapa_padrao = {
-            "despesa": CATEGORIAS_DESPESAS,
-            "receita": CATEGORIAS_RECEITA,
-            "patrimonio": CATEGORIAS_PATRIMONIO
+            TipoTransacao.DESPESA: CATEGORIAS_DESPESAS,
+            TipoTransacao.RECEITA: CATEGORIAS_RECEITA,
+            TipoTransacao.TRANSFERENCIA: CATEGORIAS_PATRIMONIO 
         }
 
         # aqui pegamos os itens da variável mapa padrão que acabamos de criar (com os dados do dict criado em constants) e iteramos:
-        for tipo, categorias in mapa_padrao.items():
+        for tipo_enum, categorias in mapa_padrao.items():
             # pegamos os valores de mapa padrão e iteramos:
             for nome_cat, lista_subs in categorias.items():
                 nova_cat = Categoria(
-                    nome=nome_cat, # associamos o nome das chaves dos dicionarios que estão em constants ao nome da categoria
-                    tipo=tipo,
-                    id_usuario=self.id_usuario,
-                    cor_hex= gerar_cor()
+                    nome = nome_cat, # associamos o nome das chaves dos dicionarios que estão em constants ao nome da categoria
+                    tipo = tipo_enum,
+                    id_usuario = self.id_usuario,
+                    cor_hex = gerar_cor()
                 )
                 session.add(nova_cat)
                 session.flush()
 
                 for nome_sub in lista_subs:
                     nova_sub = Subcategoria(
-                        nome=nome_sub,
-                        tipo=tipo,
-                        id_categoria=nova_cat.id_categoria,
-                        id_usuario=self.id_usuario
+                        nome = nome_sub,
+                        tipo = tipo_enum,
+                        id_categoria = nova_cat.id_categoria,
+                        id_usuario = self.id_usuario
                     )
                     session.add(nova_sub)
         
         session.commit()
-
-    def add_usuario(self):
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-
-        try:
-            db.add(self) # adiciona o usuário ao bd
-            db.commit() # comita a mudança
-            db.refresh(self) # atualiza o bd
-            print (f"Usuário {self.id_usuario} adicionado com sucesso!") # imprime uma mensagem de conclusão.
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao adicionar o usuário{self.id_usuario}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def del_usuario(self):
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-
-        try:
-            db.delete(self) # deleta o usuário do DB
-            db.commit() # faz a alteração permanentemente
-            print(f"Usuário {self.id_usuario} excluído com sucesso!") # imprime uma mensagem de conclusão.
-
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao excluir o usuário{self.id_usuario}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-        
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def mod_usuario(self):
-
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-        
-        try:
-            db.merge(self) # mescla o estado atual do objeto com seu equivalente no BD
-            db.commit() # salva a alteração no bd
-            db.refresh(self) # atualiza o bd com a alteração
-            print (f"Dados do usuário{self.id_usuario} alterados com sucesso.") # imprime a msg de conclusão
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao alterar os dados: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-#endregion

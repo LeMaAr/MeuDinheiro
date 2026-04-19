@@ -6,17 +6,18 @@ from classes.familias import Familia
 from classes.convites_familia import ConviteFamilia
 from classes.contas import Conta
 from classes.transacoes import Transacao
-from classes.categorias import Categoria, Subcategoria, gerar_cor
+from classes.categorias import Categoria, Subcategoria
 from classes.regras import RegraTag
 from classes.ativos import Ativo
 from classes.indices import IndiceFinanceiro
 from classes.metas import Meta
 from datetime import date, timedelta
+from utils.tools import gerar_cor
 
 fake = Faker('pt_BR')
 
 def gerar_massa_de_dados(qtd_familias = 4,
-                         membros_por_familia = 5
+                         membros_por_familia = 3
                          ):
     
     db = SessionLocal()
@@ -30,7 +31,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
         # criando primeiro as famílias para termos integridade referencial.
         for _ in range(qtd_familias):
             nova_familia = Familia(nome_familia=f" Família {fake.last_name()}")
-            nova_familia.add_familia()
+            nova_familia.salvar()
 
             # criando os usuários que farão parte das famílias criadas
             usuarios_da_familia = []
@@ -44,7 +45,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
                     id_familia = nova_familia.id_familia,
                     admin_familia = (i == 0)
                 )
-                novo_usuario.add_usuario()
+                novo_usuario.salvar()
                 usuarios_da_familia.append(novo_usuario)
         #endregion
 
@@ -66,7 +67,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
                                      cor_hex = gerar_cor(),
                                      id_usuario = admin.id_usuario
                                      )
-                nova_cat.add_categoria()
+                nova_cat.salvar()
 
                 # adicionando subcategorias
                 for nome_sub in sub_nomes:
@@ -74,7 +75,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
                                             id_categoria = nova_cat.id_categoria,
                                             id_usuario = admin.id_usuario
                                             )
-                    nova_sub.add_subcategoria()
+                    nova_sub.salvar()
             #endregion
 
             #region --- Contas ---
@@ -113,7 +114,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
 
 
                 nova_conta = Conta(**parametros_conta)
-                nova_conta.add_conta()
+                nova_conta.salvar()
                 #endregion
 
                 #region --- Transações ---               
@@ -132,7 +133,7 @@ def gerar_massa_de_dados(qtd_familias = 4,
                         id_usuario = user.id_usuario,
                         id_conta = nova_conta.id_conta
                     )
-                    salario.add_transacao()
+                    salario.salvar()
 
                     # adiocionando despesas variadas (20 a 25 por mês)
                     for _ in range(random.randint(20,25)):
@@ -147,17 +148,14 @@ def gerar_massa_de_dados(qtd_familias = 4,
                             id_conta = nova_conta.id_conta,
                             id_subcategoria = random.choice(sub_ids) if sub_ids else None
                         )
-                        t.add_transacao()
+                        t.salvar()
 
             print(f"✅ Família {nova_familia.nome_familia} populada!")
 
         print("\n🏆 Sucesso! O banco 'MeuDinheiro' está cheio de dados reais para análise.")
 
                 #endregion
-
-
-
-    
+   
     except Exception as e:
         print(f"❌ Erro: {e}")
         raise e

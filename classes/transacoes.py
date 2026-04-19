@@ -4,6 +4,7 @@ from typing import List, Optional
 from database.config import Base, SessionLocal
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean, Enum
 from sqlalchemy.orm import relationship
+from database.mixin import CRUDMixin
 import hashlib
 
 #region ENUMS
@@ -29,7 +30,7 @@ class StatusConferencia(str, enum.Enum):
 #endregion
 
 """############################### TRANSAÇÕES ########################################################"""
-class Transacao(Base):
+class Transacao(Base, CRUDMixin):
 
 #region TABELA E COLUNAS
     __tablename__ = "transacoes" # criando a tabela "transacoes"
@@ -148,7 +149,7 @@ class Transacao(Base):
 
 #endregion
 
-#region FUNÇÕES DA CLASSE    
+#region MÉTODOS E ATRIBUTOS DA CLASSE    
 
     @property
     def preco_unitario(self):
@@ -156,6 +157,25 @@ class Transacao(Base):
         # Essa propriedade é útil para transações de compra de ativos, como ações, em que o preço unitário é relevante para calcular o valor investido total.
         return self.valor / self.quantidade if self.quantidade else None
     
+    @classmethod
+    def existe_hash(cls, hash_valor):
+        """Verifica no banco se o hash já existe sem precisar instanciar a classe."""
+        db = SessionLocal()
+        try:
+            return db.query(cls).filter(cls.hash_unico == hash_valor).first() is not None
+        finally:
+            db.close()
+
+    @staticmethod
+    def gerar_hash_estatico(valor, data, descricao, local=""):
+        #Gera um hash SHA-256 baseado nos dados da transação para evitar duplicidade.
+        
+        data_str = str(data)
+        local_str = local or ""
+    
+        payload = f"{valor}{data_str}{descricao}{local_str}".encode('utf-8')
+        return hashlib.sha256(payload).hexdigest()
+
     def criar_hash_unico(self):
         # função para criar um hash único para a transação, a partir de suas informações, para evitar que haja transações duplicadas, principalmente a partir da leitura de SMS, 
         # onde pode haver o risco de ler o mesmo SMS mais de uma vez e criar transações duplicadas. O hash pode ser gerado a partir do valor, data, descrição e local da transação, 
@@ -163,74 +183,4 @@ class Transacao(Base):
         hash_input = f"{self.valor}-{self.data.strftime('%Y-%m-%d %H:%M:%S')}-{self.descricao}-{self.local}"
         self.hash_unico = hashlib.sha256(hash_input.encode()).hexdigest()
 
-    def verificar_hash_unico(self):
-        # função para verificar se já existe uma transação com o mesmo hash único no banco de dados, para evitar a criação de transações duplicadas. 
-        # A função consulta o banco de dados para verificar se já existe uma transação com o mesmo hash_unico e retorna True se encontrar uma transação com o mesmo hash, 
-        # indicando que a transação é duplicada, ou False se não encontrar, indicando que a transação é única e pode ser criada.
-
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-        try:
-            transacao_existente = db.query(Transacao).filter_by(hash_unico=self.hash_unico).first()
-            return transacao_existente is not None
-        
-        except Exception as e:
-            print(f"Erro ao verificar hash único: {e}")
-            raise e
-        
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def add_transacao(self):
-        
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-        
-        try:
-            db.add(self) # adiciona a transação atual no Banco de Dados
-            db.commit() # Salva a transação permanentemente
-            db.refresh(self) # atualiza o objeto criado com a ID gerada pelo BD
-            print(f"Transação {self.id_transacao} incluída com sucesso!") # imprime uma mensagem de conclusão.
-
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao gravar a transação: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão
-
-    def del_transacao(self):
-
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-
-        try:
-            db.delete(self) # deleta a transação atual no Banco de Dados
-            db.commit() # Salva a transação permanentemente
-            print(f"Transação {self.id_transacao} excluída com sucesso!") # imprime uma mensagem de conclusão.
-                    
-
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao excluir a transação: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão
-
-    def mod_transacao(self):
-
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-        
-        try:
-            db.merge(self) # mescla o estado atual do objeto com seu equivalente no BD
-            db.commit() # salva a alteração no bd
-            db.refresh(self) # atualiza o bd com a alteração
-            print (f"Transação {self.id_transacao} alterada com sucesso.") # imprime a msg de conclusão
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao alterar a transação: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
 #endregion

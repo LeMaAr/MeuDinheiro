@@ -1,10 +1,11 @@
 from datetime import datetime
 from database.config import Base, SessionLocal
+from database.mixin import CRUDMixin
 from sqlalchemy import Column, Integer, Float, String, DateTime, Date, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 """############################### ÍNDICES ########################################################"""
-class IndiceFinanceiro(Base):
+class IndiceFinanceiro(Base, CRUDMixin):
     """ criando a tabela "indices" para armazenar os índices financeiros, como SELIC, IPCA, CDI, etc. 
     Esses índices podem ser usados para calcular a rentabilidade de investimentos, corrigir valores monetários, etc."""
     
@@ -48,60 +49,21 @@ class IndiceFinanceiro(Base):
         else:
             self.data_referencia = data_referencia
         
-        self.ultima_atualizacao = ultima_atualizacao or datetime.datetime.now() # se a data de última atualização não for fornecida.
+        self.ultima_atualizacao = ultima_atualizacao or datetime.now() # se a data de última atualização não for fornecida.
         self.unidade = unidade
         self.base_tempo = base_tempo
         self.frequencia_atualizacao = frequencia_atualizacao
 
 #endregion
 
-#region MÉTODOS DE BANCO DE DADOS:
-    def add_indice(self):
+#region MÉTODOS DE ÍNDICES
+    @classmethod
+    def buscar_ultimo_valor(cls, nome_indice):
+        """Retorna o registro mais recente de um índice específico (ex: SELIC)."""
         db = SessionLocal()
-        
         try:
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-            print(f"Índice {self.nome} de {self.data_referencia} adicionado!")
-     
-        except Exception as e:
-            db.rollback()
-            raise e
-     
-        finally:
-            db.close()
-
-    def mod_indice(self):
-        db = SessionLocal()
-        
-        try:
-            db.merge(self) # Mescla as alterações feitas no objeto com o registro no banco
-            db.commit() # Salva permanentemente
-            db.refresh(self) # Atualiza o objeto local
-            print(f"Índice {self.nome} de {self.data_referencia} atualizado com sucesso!")
-        
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao alterar índice: {e}")
-            raise e
-        
-        finally:
-            db.close()
-
-    def del_indice(self):
-        db = SessionLocal()
-        
-        try:
-            db.delete(self) # Deleta o registro do banco
-            db.commit() # Salva permanentemente
-            print(f"Índice {self.nome} de {self.data_referencia} deletado com sucesso!")
-        
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao deletar índice: {e}")
-            raise e
-        
+            return db.query(cls).filter(cls.nome == nome_indice.upper())\
+                     .order_by(cls.data_referencia.desc()).first()
         finally:
             db.close()
 #endregion

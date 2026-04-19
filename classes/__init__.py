@@ -7,3 +7,4 @@ from .indices import IndiceFinanceiro
 from .metas import Meta
 from .regras import RegraTag
 from .familias import Familia
+from .convites_familia import ConviteFamilia

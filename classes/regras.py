@@ -1,9 +1,10 @@
 from database.config import Base, SessionLocal
+from database.mixin import CRUDMixin
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 """############################### REGRAS TAG ########################################################"""
-class RegraTag(Base):
+class RegraTag(Base, CRUDMixin):
     """ Essa classe vai ser responsável por automatizar a escolha de tags durante a importação de arquivos csv. 
     Ela cria uma tabela no bd com palavras-chave associadas às suas respectivas tags"""
     
@@ -44,44 +45,25 @@ class RegraTag(Base):
 #endregion
 
 #region MÉTODOS:
-    def add_regra(self):
-        db = SessionLocal()
+
+    @classmethod
+    def buscar_regra(cls, texto_transacao, id_usuario):
+        """Método de Classe responsável conferir nas regras cadastradas se o texto de entrada já existe"""
+
+        db =  SessionLocal()
+
         try:
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-            print(f"Regra para '{self.palavra_chave}' adicionada com sucesso!")
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao adicionar regra: {e}")
-            raise e
+            # busca pelas regras do usuário.
+            regras = db.query(cls).filter(cls.id_usuario == id_usuario).all()
+
+            # agora verifica se alguma palavra chave está contida no texto da transação.
+            for regra in regras:
+                if regra.palavra_chave in texto_transacao.upper():
+                    return regra # retorna a regra encontrada 
+
+            return None # nenhuma regra encontrada
+        
         finally:
             db.close()
 
-    def mod_regra(self):
-        db = SessionLocal()
-        try:
-            db.merge(self)
-            db.commit()
-            db.refresh(self)
-            print(f"Regra '{self.palavra_chave}' atualizada com sucesso!")
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao alterar regra: {e}")
-            raise e
-        finally:
-            db.close()
-
-    def del_regra(self):
-        db = SessionLocal()
-        try:
-            db.delete(self)
-            db.commit()
-            print(f"Regra para '{self.palavra_chave}' excluída com sucesso!")
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao excluir regra: {e}")
-            raise e
-        finally:
-            db.close()
 #endregion

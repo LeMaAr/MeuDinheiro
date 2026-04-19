@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, Date, ForeignKey, Boolean, Enum
-from database.config import Base, SessionLocal
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum
+from database.config import Base
+from database.mixin import CRUDMixin
 from sqlalchemy.orm import relationship
-import datetime
+from datetime import datetime, date
 import enum
 
 # region ENUMS
@@ -25,7 +26,7 @@ class SubtipoConta(enum.Enum):
 #endregion
 
 """############################### CONTA (BASE) ########################################################"""
-class Conta(Base):
+class Conta(Base, CRUDMixin):
     """ A classe Conta representa a estrutura básica de uma conta financeira, com atributos comuns a todos os tipos de conta, como nome da conta, saldo inicial, tipo de conta, entre outros.
     A classe Conta é a classe base para as classes Conta_Corrente e Conta_Cartao, que herdam os atributos e métodos da classe Conta e adicionam funcionalidades específicas para cada tipo de conta."""
 
@@ -116,7 +117,12 @@ class Conta(Base):
         self.fechamento_cartao = fechamento_cartao
         self.ativa = ativa
         self.id_indice = id_indice 
-        self.tipo_instituicao = tipo_instituicao
+        
+        if isinstance(tipo_instituicao, str):
+            self.tipo_instituicao = TipoInstituicao(tipo_instituicao)
+        else:
+            self.tipo_instituicao = tipo_instituicao
+        
         self.ignorar_patrimonio = ignorar_patrimonio
         self.cor_perfil = cor_perfil
         self.limite_seguranca = limite_seguranca
@@ -124,8 +130,7 @@ class Conta(Base):
 #endregion
 
 #region PROPRIEDADES E MÉTODOS DE CONTA
-
-#region PROPRIEDADES E MÉTODOS ESPECÍFICOS:
+    
     # PROPRIEDADES:
     @property
     def saldo_atual(self):
@@ -190,59 +195,6 @@ class Conta(Base):
         except Exception as e:
             print (f"Não foi possível verificar os gatilho: {e}")
             raise e
-#endregion
-
-#region MÉTODOS DE BANCO DE DADOS:
-    def add_conta(self):
-        db = SessionLocal()
-        
-        try:
-            db.add(self) # adiciona a conta ao bd
-            db.commit() # comita a mudança
-            db.refresh(self) # atualiza o bd
-            print (f"Conta {self.id_conta} adicionada com sucesso!") # imprime uma mensagem de conclusão.
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao adicionar a conta {self.id_conta}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def mod_conta(self):
-        db =  SessionLocal()
-
-        try:
-            db.merge(self) # mescla o estado atual do objeto com seu equivalente no BD
-            db.commit() # salva a alteração no bd
-            db.refresh(self) # atualiza o bd com a alteração
-            print (f"Conta {self.id_conta} alterada com sucesso.") # imprime a msg de conclusão
-        
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao alterar os dados: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-
-        finally:
-            db.close() # fecha a conexão com o BD
-
-    def del_conta(self):
-        db = SessionLocal() # Estabelece a conexão com o banco de Dados.
-
-        try:
-            db.delete(self) # deleta o usuário do DB
-            db.commit() # faz a alteração permanentemente
-            print(f"Conta {self.id_conta} excluída com sucesso!") # imprime uma mensagem de conclusão.
-
-        except Exception as e:
-            db.rollback() # caso haja algum erro, desfaz a operação.
-            print (f"Erro ao excluir a conta{self.id_conta}: {e}") # imprime uma mensagem de conclusão.
-            raise e # lança o erro para fora da função.
-        
-        finally:
-            db.close() # fecha a conexão com o BD
-#endregion
 
 #endregion
 

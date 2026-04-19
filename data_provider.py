@@ -112,6 +112,74 @@ def recuperar_saldo_total(id_usuario):
     finally:
         db.close()
 
+def listar_contas(id_usuario):
+    """Retorna todas as contas ativas de um usuário específico."""
+    db = SessionLocal()
+    
+    try:
+        return db.query(Conta).filter_by(id_usuario=id_usuario).all()
+    finally:
+        db.close()
+
+def obter_detalhamento_contas(id_usuario):
+    """ Retorna uma lista com o nome e o saldo atual de cada conta do usuário.
+    Útil para a aba de 'Minhas Contas'."""
+    db = SessionLocal()
+    try:
+        # 1. Buscamos todas as contas do usuário
+        contas = db.query(Conta).filter_by(id_usuario=id_usuario).all()
+        
+        # 2. Montamos a lista com os dados processados
+        lista_detalhada = []
+        
+        for conta in contas:
+            lista_detalhada.append({
+                "id_conta": conta.id_conta,
+                "nome": conta.nome_conta,
+                "subtipo": conta.subtipo_conta.value,
+                "instituicao": conta.tipo_instituicao.value,
+                "saldo_atual": conta.saldo_atual, 
+                "limite": conta.limite,
+                "ignorar": conta.ignorar_patrimonio
+            })
+            
+        return lista_detalhada
+
+    except Exception as e:
+        print(f"❌ Erro ao listar detalhes das contas: {e}")
+        return []
+    finally:
+        db.close()
+
+def recuperar_composicao_patrimonio(id_usuario):
+    """
+    Agrupa os saldos por SubtipoConta para gerar o gráfico de rosca no Dash.
+    """
+    db = SessionLocal()
+    try:
+        contas = db.query(Conta).filter(
+            Conta.id_usuario == id_usuario, 
+            Conta.ignorar_patrimonio == False
+        ).all()
+
+        if not contas:
+            return []
+
+        # Criamos uma lista de dicionários com os dados brutos
+        dados = [
+            {"subtipo": c.subtipo_conta.value, "saldo": c.saldo_atual} 
+            for c in contas
+        ]
+        
+        df = pd.DataFrame(dados)
+        
+        # Agrupamos por subtipo e somamos
+        df_resumo = df.groupby("subtipo")["saldo"].sum().reset_index()
+        
+        return df_resumo.to_dict('records')
+    finally:
+        db.close()
+
 def recuperar_resumo_mensal(id_usuario):
     # essa função deverá ser capaz de somar as movimentações do usuário no último mês (despesas e receitas) para mostrarmos na tela de resumo.
 

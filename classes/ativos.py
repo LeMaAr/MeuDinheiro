@@ -1,10 +1,11 @@
-import datetime
+from datetime import datetime
 from database.config import Base, SessionLocal
-from sqlalchemy import Column, ForeignKey, Integer, Float, String, DateTime, Date, Boolean
+from database.mixin import CRUDMixin
+from sqlalchemy import Column, ForeignKey, Integer, Float, String
 from sqlalchemy.orm import relationship
 
 """############################### ATIVOS ########################################################"""
-class Ativo(Base):
+class Ativo(Base, CRUDMixin):
     """ A classe Ativo servirá como uma biblioteca de ativos financeiros, onde cada ativo financeiro que o usuário possui será registrado como um objeto da classe Ativo,
     com informações como nome do ativo, tipo do ativo, ticker, taxa de custódia anual, etc. """
     
@@ -54,9 +55,9 @@ class Ativo(Base):
         self.id_familia = id_familia
 #endregion
 
-#region PROPRIEDADES E MÉTODOS:
+#region PROPRIEDADES E MÉTODOS
 
-#region PROPRIEDADES:
+#region PROPRIEDADES ATIVAS:
     @property
     def valor_investido_total(self):
         # propriedade para calcular o valor total investido no ativo, multiplicando a quantidade pelo preço unitário. 
@@ -87,6 +88,7 @@ class Ativo(Base):
         # O total de dividendos recebidos pode ser calculado somando os valores das transações associadas ao ativo que correspondem a recebimento de dividendos. 
         # Essa propriedade é útil para exibir o total de dividendos recebidos de um ativo específico, o que pode ser relevante para avaliar a rentabilidade do investimento em um ativo que paga dividendos e tomar decisões sobre alocação de ativos.
         return sum(t.valor or 0.0 for t in self.transacoes if t.tipo == "dividendo")
+#endregion
 
 #region PROPRIEDADES A SEREM IMPLEMENTADAS:  
     @property
@@ -153,60 +155,6 @@ class Ativo(Base):
         # A volatilidade pode ser calculada como o desvio padrão das variações de preço do ativo em um determinado período, como 30 dias, por exemplo. 
         # Essa propriedade é útil para exibir a volatilidade de um ativo específico, o que pode ser relevante para avaliar o risco associado ao investimento em um ativo e tomar decisões sobre alocação de ativos.
         pass
-#endregion
-
-#endregion
-
-#region MÉTODOS DE BANCO DE DADOS:
-    def add_ativo(self):
-        
-        db = SessionLocal()
-        
-        try:
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-            print(f"Ativo {self.nome_ativo} adicionado!")
-     
-        except Exception as e:
-            db.rollback()
-            raise e
-     
-        finally:
-            db.close()
-
-    def mod_ativo(self):
-        db = SessionLocal()
-        
-        try:
-            db.merge(self) # Mescla as alterações feitas no objeto com o registro no banco
-            db.commit() # Salva permanentemente
-            db.refresh(self) # Atualiza o objeto local
-            print(f"Ativo {self.nome_ativo} atualizado com sucesso!")
-        
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao alterar ativo: {e}")
-            raise e
-        
-        finally:
-            db.close()
-
-    def del_ativo(self):
-        db = SessionLocal()
-        
-        try:
-            db.delete(self) # Deleta o registro do banco
-            db.commit() # Salva permanentemente
-            print(f"Ativo {self.nome_ativo} deletado com sucesso!")
-        
-        except Exception as e:
-            db.rollback()
-            print(f"Erro ao deletar ativo: {e}")
-            raise e
-        
-        finally:
-            db.close()
 #endregion
 
 #endregion
